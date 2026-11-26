@@ -1,7 +1,7 @@
 """OpenAI 兼容的服务接口，带一个聊天网页：
 
-    tinybrain serve                                          # 不写存档：用 out/small 里走得最远的那个
-    tinybrain serve out/medium/pretrain/ckpt.pt --port 8001  # 然后浏览器打开 http://127.0.0.1:8001/
+    tinygo serve                                          # 不写存档：用 out/small 里走得最远的那个
+    tinygo serve out/medium/pretrain/ckpt.pt --port 8001  # 然后浏览器打开 http://127.0.0.1:8001/
 
 网页有两种用法：对话（SFT 之后的存档），续写（预训练、退火的存档还不会回答问题，只会接着你写的开头往下写）。
 接口：POST /v1/chat/completions（messages、max_tokens、temperature、top_k、tools、stream）、POST /v1/completions（prompt，续写）、

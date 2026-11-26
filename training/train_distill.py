@@ -1,7 +1,7 @@
 """MOPD（多老师在线蒸馏）：学生自己生成回答，按每道题的领域找对应的专家当老师，在学生写的每个位置上最小化 KL(学生 ‖ 老师)。
 
-    tinybrain distill        # 默认：学生是 out/small/sft，老师是 out/small 里所有的 expert_<领域>，data/mopd_prompts.parquet，写到 out/small/mopd
-    tinybrain distill --run out/medium --teachers 代码=out/medium/expert_code/ckpt.pt 数学=out/medium/expert_math/ckpt.pt
+    tinygo distill        # 默认：学生是 out/small/sft，老师是 out/small 里所有的 expert_<领域>，data/mopd_prompts.parquet，写到 out/small/mopd
+    tinygo distill --run out/medium --teachers 代码=out/medium/expert_code/ckpt.pt 数学=out/medium/expert_math/ckpt.pt
 
 专家和学生用同一个分词器，所以 KL 是在整个词表上精确算的，不是只靠采样出的那一个词去估。只有一个老师时就是普通的在线蒸馏。
 --merge-init：先把学生换成「SFT 模型 + 各专家相对它的改动的平均」（任务算术，CA-MOPD 的做法），再开始蒸馏。
@@ -192,7 +192,7 @@ def find_teachers(run) -> list[str]:
              if (Path(run) / f"expert_{name}" / "ckpt.pt").exists()]
     if not pairs:
         raise FileNotFoundError(f"在 {run} 下没找到专家的存档（expert_math、expert_code、expert_literature）："
-                                f"先用 tinybrain sft --data data/sft_expert_math.parquet 这样训出专家，或者用 --teachers 指定")
+                                f"先用 tinygo sft --data data/sft_expert_math.parquet 这样训出专家，或者用 --teachers 指定")
     return pairs
 
 

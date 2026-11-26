@@ -1,8 +1,8 @@
 """SFT：从一个存档出发，在打包好的对话数据上接着训，只在回答上算损失。三档的通用 SFT 和三个领域专家都用它。
 
-    tinybrain sft                                        # 默认：data/sft_small.parquet，从 out/small 里的退火（没有就预训练）出发
-    tinybrain sft --data data/sft_expert_math.parquet    # 领域专家：从同一个起点出发，写到 out/small/expert_math
-    tinybrain sft --run out/medium --init out/medium/sft/ckpt.pt --data data/sft_expert_code.parquet
+    tinygo sft                                        # 默认：data/sft_small.parquet，从 out/small 里的退火（没有就预训练）出发
+    tinygo sft --data data/sft_expert_math.parquet    # 领域专家：从同一个起点出发，写到 out/small/expert_math
+    tinygo sft --run out/medium --init out/medium/sft/ckpt.pt --data data/sft_expert_code.parquet
 
 --data 可以直接给 parquet，第一次用时按 --seq-len 打包，放在它旁边的 tokens/ 目录里；也可以给 tools.prepare --chat 打包好的目录。
 不写 --out 时：数据叫 sft_expert_<领域> 就写到 <运行目录>/expert_<领域>，否则写到 <运行目录>/sft。

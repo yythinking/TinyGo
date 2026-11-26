@@ -1,7 +1,7 @@
 """标准基准：C-Eval（验证集，52 科）、CMMLU（测试集，67 科）、GSM8K（测试集）。
 
-    tinybrain benchmarks prepare                                    # 下载，转成 data/benchmarks/*.jsonl
-    tinybrain benchmarks run out/small/sft/ckpt.pt --bench ceval cmmlu gsm8k --chat --out out/small/sft/bench.json
+    tinygo benchmarks prepare                                    # 下载，转成 data/benchmarks/*.jsonl
+    tinygo benchmarks run out/small/sft/ckpt.pt --bench ceval cmmlu gsm8k --chat --out out/small/sft/bench.json
 
 选择题：比较模型在「答案：」后面写 A、B、C、D 的概率，取最大的那个。不用生成，所以基座模型也能测。
 GSM8K：默认温度 0.8、top-k 50 采样生成解答，取最终答案和标准答案比，判分和数学 RLVR 是同一套（training/rewards/math.py）。

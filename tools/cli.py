@@ -1,12 +1,12 @@
-"""tinybrain 命令：pip install -e . 之后，tinybrain <命令> 就等于 python -m <模块>，参数原样交过去。
+"""tinygo 命令：pip install -e . 之后，tinygo <命令> 就等于 python -m <模块>，参数原样交过去。
 
-    tinybrain                    # 列出全部命令
-    tinybrain pretrain --help    # 某个命令的全部参数
+    tinygo                    # 列出全部命令
+    tinygo pretrain --help    # 某个命令的全部参数
 """
 import importlib
 import sys
 
-# 命令 → (模块, 一句话说明)。顺序就是 tinybrain 列出来的顺序：大致是从做数据到用模型的先后
+# 命令 → (模块, 一句话说明)。顺序就是 tinygo 列出来的顺序：大致是从做数据到用模型的先后
 COMMANDS = {
     "data": ("dataset.build", "做数据：下载、清洗、去重分档、SFT 语料、RL 题目（--check 先看缺什么）"),
     "prepare": ("tools.prepare", "切词；训练时给 parquet 会自动切，一般不用单独跑"),
@@ -33,8 +33,8 @@ COMMANDS = {
 
 def usage() -> str:
     width = max(len(name) for name in COMMANDS)
-    lines = ["用法：tinybrain <命令> [参数]，每个命令的全部参数见 tinybrain <命令> --help", ""]
-    lines += [f"  tinybrain {name:<{width}}  {what}" for name, (_, what) in COMMANDS.items()]
+    lines = ["用法：tinygo <命令> [参数]，每个命令的全部参数见 tinygo <命令> --help", ""]
+    lines += [f"  tinygo {name:<{width}}  {what}" for name, (_, what) in COMMANDS.items()]
     return "\n".join(lines)
 
 
@@ -49,7 +49,7 @@ def main(argv=None) -> int:
         raise SystemExit(2)
     module = importlib.import_module(COMMANDS[name][0])
     program = sys.argv[0]
-    sys.argv[0] = f"tinybrain {name}"  # argparse 拿它当用法里的程序名
+    sys.argv[0] = f"tinygo {name}"  # argparse 拿它当用法里的程序名
     try:
         module.main(rest)
     finally:

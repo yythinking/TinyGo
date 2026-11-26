@@ -1,6 +1,6 @@
 """在一个很小的模型上把整条链跑一遍，确认每个阶段都是通的。不是为了效果，是为了「跑通」。
 
-    tinybrain demo --out out/demo --judge-url http://localhost:8080/v1 --judge-model Qwen3.8-27B-4bit --judge-workers 2
+    tinygo demo --out out/demo --judge-url http://localhost:8080/v1 --judge-model Qwen3.8-27B-4bit --judge-workers 2
 
 阶段（做完的会跳过，可以随时中断再接着跑；--only 只跑某几个阶段）：
   sample     预训练小样本：有 data/pretrain_nano.parquet 时取它的开头一段（文件内部已经打乱，就是一份按配比的样本），

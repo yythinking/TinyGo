@@ -15,11 +15,12 @@ TinyGo is a Chinese-first small language model project built with PyTorch. It in
 
 ## Quick start
 
-Requires Python 3.11+ and PyTorch 2.5+. The installed command is `tinybrain`.
+Requires Python 3.11+ and PyTorch 2.5+. If you installed an earlier version, rerun the install command in the same environment after updating your checkout to enable `tinygo`.
 
 ```bash
 git clone https://github.com/yythinking/TinyGo.git && cd TinyGo
-pip install -e ".[artifact]"
+python -m pip install -e ".[artifact]"
+tinygo --help
 ```
 
 ### Local chat
@@ -27,30 +28,30 @@ pip install -e ".[artifact]"
 Download the Small Chat weights from [the resource index](README.md#来源与致谢), then start a terminal chat or a web server:
 
 ```bash
-tinybrain chat out/models/small-chat
-tinybrain serve out/models/small-chat
+tinygo chat out/models/small-chat
+tinygo serve out/models/small-chat
 ```
 
 Open `http://127.0.0.1:8001/` for the web chat. Add `--demo` to `chat` to try the built-in prompts.
 
-The `chat`, `serve`, `generate`, and `eval` commands accept a model directory and verify its files against the SHA-256 hashes in `artifact.json`. Use `tinybrain export --checkpoint <ckpt.pt> --out <dir> --stage <stage>` to export your own checkpoint in the same format.
+The `chat`, `serve`, `generate`, and `eval` commands accept a model directory and verify its files against the SHA-256 hashes in `artifact.json`. Use `tinygo export --checkpoint <ckpt.pt> --out <dir> --stage <stage>` to export your own checkpoint in the same format.
 
 ### Train from scratch
 
-Place `pretrain_nano.parquet` and `sft_small.parquet` under `data/`. Download them from [the resource index](README.md#来源与致谢) or build the data with `tinybrain data` (`tinybrain data --check` lists the required inputs).
+Place `pretrain_nano.parquet` and `sft_small.parquet` under `data/`. Download them from [the resource index](README.md#来源与致谢) or build the data with `tinygo data` (`tinygo data --check` lists the required inputs).
 
 ```bash
 pip install -e ".[data]"
 # Optional: pip install -e ".[cuda,fast]"
 
-tinybrain pretrain     # data/pretrain_nano.parquet → out/small/pretrain
-tinybrain sft          # continues from the previous stage → out/small/sft
-tinybrain generate     # continue a few built-in prompts
-tinybrain chat         # chat (--tools enables a calculator and Python)
-tinybrain serve        # chat page at http://127.0.0.1:8001/ (continue mode for base checkpoints), plus an OpenAI-compatible API
+tinygo pretrain     # data/pretrain_nano.parquet → out/small/pretrain
+tinygo sft          # continues from the previous stage → out/small/sft
+tinygo generate     # continue a few built-in prompts
+tinygo chat         # chat (--tools enables a calculator and Python)
+tinygo serve        # chat page at http://127.0.0.1:8001/ (continue mode for base checkpoints), plus an OpenAI-compatible API
 ```
 
-Each stage writes to `out/<preset>/<stage>/` and starts from the previous stage's checkpoint, so no paths are needed. Use `--preset medium` for a bigger model and `--data data/pretrain_mini.parquet` for more data. `tinybrain demo` runs every stage on the 23M demo model. `tinybrain <command> --help` lists all options.
+Each stage writes to `out/<preset>/<stage>/` and starts from the previous stage's checkpoint, so no paths are needed. Use `--preset medium` for a bigger model and `--data data/pretrain_mini.parquet` for more data. `tinygo demo` runs every stage on the 23M demo model. `tinygo <command> --help` lists all options.
 
 ### Full small pipeline
 
@@ -58,15 +59,15 @@ Pretraining → annealing → SFT → RL → evaluation. Place `pretrain_mini.pa
 
 ```bash
 # Terminal 1
-tinybrain benchmarks prepare                                         # C-Eval, CMMLU, GSM8K for local evaluation
-tinybrain pretrain --data data/pretrain_mini.parquet                 # → out/small/pretrain
-tinybrain prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all
-tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
+tinygo benchmarks prepare                                         # C-Eval, CMMLU, GSM8K for local evaluation
+tinygo pretrain --data data/pretrain_mini.parquet                 # → out/small/pretrain
+tinygo prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all
+tinygo pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
     --epochs 0.1 --warmup-steps 0 --lr-mult 0.1 --final-lr-frac 0     # annealing → out/small/anneal
-tinybrain sft                                                        # → out/small/sft
+tinygo sft                                                        # → out/small/sft
 JUDGE_URL='http://127.0.0.1:8080/v1'  # Set this to the judge server's URL
-tinybrain rl --judge-url "$JUDGE_URL" --judge-workers 1 --judge-timeout 600   # → out/small/rl
-tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k \
+tinygo rl --judge-url "$JUDGE_URL" --judge-workers 1 --judge-timeout 600   # → out/small/rl
+tinygo eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k \
     --judge-url "$JUDGE_URL" --judge-workers 1
 
 # terminal 2: the judge (Qwen3.8-27B) does not fit in 16 GB; on an Apple-silicon Mac with 32 GB+:

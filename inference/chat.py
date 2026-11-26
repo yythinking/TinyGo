@@ -1,8 +1,8 @@
 """在命令行里和模型对话：
 
-    tinybrain chat                 # 不写存档：用 out/small 里走得最远的那个（rl、mopd、sft 依次找）
-    tinybrain chat --demo          # 先把内置的几个问题挨个问一遍，看看模型现在什么样
-    tinybrain chat out/small/sft/ckpt.pt --tools
+    tinygo chat                 # 不写存档：用 out/small 里走得最远的那个（rl、mopd、sft 依次找）
+    tinygo chat --demo          # 先把内置的几个问题挨个问一遍，看看模型现在什么样
+    tinygo chat out/small/sft/ckpt.pt --tools
 
 每次回车发一句，模型回答完接着等下一句。输入 /清空 重新开始对话，/退出 结束。
 --tools 打开基础工具（计算器、跑 Python），模型写出工具调用时会真的执行，再把结果交给它接着回答。

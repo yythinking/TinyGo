@@ -1,7 +1,7 @@
 """逐词生成。第一步把整段提示送进去并建好缓存，之后每步只算新来的一个词。
 
-    tinybrain generate                                  # 不写存档：用 out/small 里的退火（没有就预训练）存档，续写几个内置的开头
-    tinybrain generate out/small/pretrain/ckpt.pt --prompt "我家门前有两株树，" --max-new 100
+    tinygo generate                                  # 不写存档：用 out/small 里的退火（没有就预训练）存档，续写几个内置的开头
+    tinygo generate out/small/pretrain/ckpt.pt --prompt "我家门前有两株树，" --max-new 100
 
 命令行默认采样（温度 0.8、只在概率最高的 50 个词里挑）。--temperature 0 是每步取概率最大的词：小模型这样很容易陷进重复。
 """

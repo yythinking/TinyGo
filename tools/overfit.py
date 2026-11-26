@@ -1,6 +1,6 @@
 """过拟合检查：拿一小段真实文字反复训，看模型能不能把它背下来。整条链（分词 → 训练 → 存档 → 生成）都走一遍。
 
-    tinybrain overfit --preset small --chars 3000 --steps 300
+    tinygo overfit --preset small --chars 3000 --steps 300
 
 做法：
   1. 从 --input（默认是洗好的鲁迅全集）里取前 --chars 个字；

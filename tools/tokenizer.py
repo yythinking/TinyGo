@@ -1,9 +1,9 @@
 """分词器：从各个来源按配比抽一份样本，训练 SentencePiece（BPE），再在留出来的文档上量压缩率。
 
-    tinybrain tokenizer sample --tokens 40000000        # 抽样本 → out/tokenizer/corpus.txt、heldout.jsonl
-    tinybrain tokenizer train --vocab 32768              # 训练 → out/tokenizer/sp32768.model
-    tinybrain tokenizer eval out/tokenizer/sp32768.model # 各类文本上一个词平均几个字
-    tinybrain tokenizer export-hf tokenizer/tokenizer.model  # 导出逐词一致的 HF 格式 → tokenizer/tokenizer.json
+    tinygo tokenizer sample --tokens 40000000        # 抽样本 → out/tokenizer/corpus.txt、heldout.jsonl
+    tinygo tokenizer train --vocab 32768              # 训练 → out/tokenizer/sp32768.model
+    tinygo tokenizer eval out/tokenizer/sp32768.model # 各类文本上一个词平均几个字
+    tinygo tokenizer export-hf tokenizer/tokenizer.model  # 导出逐词一致的 HF 格式 → tokenizer/tokenizer.json
 
 样本直接从原始文件现洗（和 dataset/pretrain.py 同一套清洗），所以还没整批洗完的来源也能用。
 每个来源只读少数几个分片（默认 3 个，在文件列表里均匀地取，大来源的不同子来源都能碰到），每个分片读开头的一部分。

@@ -1,9 +1,9 @@
 """把文本变成训练用的词数据目录。
 
-    tinybrain prepare --input "data/mix/out/nano/*.parquet" --out data/tokens/nano
+    tinygo prepare --input "data/mix/out/nano/*.parquet" --out data/tokens/nano
 
 编码有两种引擎，结果一字节不差：
-  gigatoken      装了 gigatoken（pip install gigatoken）、.model 旁边有同名的 .json（HF 格式，tinybrain tokenizer export-hf
+  gigatoken      装了 gigatoken（pip install gigatoken）、.model 旁边有同名的 .json（HF 格式，tinygo tokenizer export-hf
                  导出，仓库里的正式分词器已经带着）时自动用它。Rust + SIMD，parquet 的列直接交给它，不经过 Python 字符串，
                  M4 Max 上整个 nano（3.9 GB 文本）不到 10 秒。开始时会拿第一批的前几百篇和 SentencePiece 对一遍。
   sentencepiece  其余情况：--workers 个进程并行（默认用满所有核），每个进程单线程跑 SentencePiece，主进程按原顺序收回来写盘。
@@ -16,7 +16,7 @@
 对话数据（SFT）加 --chat：读 parquet 的 messages 列（每行一段对话，[{role, content}, …]），按 inference.template 的格式编码，
 打包成长度为 --seq-len + 1 的行：
 
-    tinybrain prepare --chat --input data/sft.parquet --out data/tokens/sft-small --seq-len 2048
+    tinygo prepare --chat --input data/sft.parquet --out data/tokens/sft-small --seq-len 2048
 """
 import argparse
 import collections
@@ -216,7 +216,7 @@ def ensure_tokens(path: str, chat: bool = False, seq_len: int = 2048, tokenizer:
         return path
     if not p.exists():
         raise FileNotFoundError(f"没有找到 {path}。数据集在 https://www.modelscope.cn/datasets/caiwangzsnm/tinybrain-dataset ，"
-                                f"下载后用 --data 指过去；也可以用 tinybrain data 自己做")
+                                f"下载后用 --data 指过去；也可以用 tinygo data 自己做")
     out = p.parent / "tokens" / (f"{p.stem}-{seq_len}" if chat else p.stem)
     if (out / "meta.json").exists():
         print(f"用已经切好的 {out}", flush=True)

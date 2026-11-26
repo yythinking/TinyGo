@@ -1,15 +1,15 @@
 """预训练，也用来退火。
 
-    tinybrain pretrain                                   # 默认：small，data/pretrain_nano.parquet，写到 out/small/pretrain
-    tinybrain pretrain --data data/pretrain_mini.parquet --seq-len 2048 --batch-size 16
+    tinygo pretrain                                   # 默认：small，data/pretrain_nano.parquet，写到 out/small/pretrain
+    tinygo pretrain --data data/pretrain_mini.parquet --seq-len 2048 --batch-size 16
 
     # 退火：从预训练的存档出发，九成预训练数据 + 一成对话数据（整段算损失），学习率从 0.1 倍降到 0；给了 --init 默认写到 out/small/anneal
-    tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_nano.parquet:0.9,data/tokens/chat-all:0.1 \\
+    tinygo pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_nano.parquet:0.9,data/tokens/chat-all:0.1 \\
         --steps 2000 --warmup-steps 0 --lr-mult 0.1 --final-lr-frac 0
 
     # WSD：预热、恒定、最后 20% 的步数退火。恒定段的任何存档都能分出一支退火（主线不受影响），写到 out/small/cooldown-<步数>
-    tinybrain pretrain --schedule wsd
-    tinybrain pretrain --cooldown-from out/small/pretrain/ckpt.pt --cooldown-steps 3000
+    tinygo pretrain --schedule wsd
+    tinygo pretrain --cooldown-from out/small/pretrain/ckpt.pt --cooldown-steps 3000
 
 --data 可以直接给 parquet，第一次用时自动切词，放在它旁边的 tokens/ 目录里（见 tools.prepare.ensure_tokens）；也可以给切好的目录。
 

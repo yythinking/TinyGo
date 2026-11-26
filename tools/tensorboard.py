@@ -1,6 +1,6 @@
 """把训练 JSONL 日志补录并持续同步到 TensorBoard，无需重启正在运行的训练。
 
-tinybrain tensorboard --run out/small/pretrain
+tinygo tensorboard --run out/small/pretrain
 python -m tensorboard.main --logdir out/small/pretrain/tensorboard --host 127.0.0.1 --port 6006
 """
 import argparse

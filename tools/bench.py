@@ -1,4 +1,4 @@
-"""在当前机器上量一量训练速度和显存：tinybrain bench small --batch 8 --seq 8192
+"""在当前机器上量一量训练速度和显存：tinygo bench small --batch 8 --seq 8192
 
 用随机词跑若干步「前向 + 反向 + 优化器」，报告每秒处理多少词、显存峰值。拿到新显卡先跑它。
 CUDA 使用 Liger 融合损失和 mHC 等算子，窗口/GQA 可选 FlexAttention 或 cuDNN。

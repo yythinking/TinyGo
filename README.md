@@ -34,11 +34,12 @@ TinyGo 是一个以中文为主的小型语言模型项目，使用 PyTorch 实�
 
 ## 快速开始
 
-需要 Python 3.11+ 和 PyTorch 2.5+。安装后使用的命令是 `tinybrain`。
+需要 Python 3.11+ 和 PyTorch 2.5+。如果以前安装过，更新代码后在原环境里重新运行下面的安装命令，即可使用 `tinygo`。
 
 ```bash
 git clone https://github.com/yythinking/TinyGo.git && cd TinyGo
-pip install -e ".[artifact]"
+python -m pip install -e ".[artifact]"
+tinygo --help
 ```
 
 ### 本地对话
@@ -46,8 +47,8 @@ pip install -e ".[artifact]"
 从[来源与致谢](#来源与致谢)下载 Small Chat 权重后，在终端里对话，或者启动网页：
 
 ```bash
-tinybrain chat out/models/small-chat
-tinybrain serve out/models/small-chat
+tinygo chat out/models/small-chat
+tinygo serve out/models/small-chat
 ```
 
 网页地址是 `http://127.0.0.1:8001/`。给 `chat` 加 `--demo` 可以试一遍内置问题。
@@ -61,53 +62,54 @@ pip install -e ".[data]"
 # 可选：pip install -e ".[cuda,fast]"
 ```
 
-**第 1 步：准备数据**。快速开始需要 `data/pretrain_nano.parquet` 和 `data/sft_small.parquet`。可从[来源与致谢](#来源与致谢)下载，也可用 `tinybrain data --check` 检查所需输入，再用 `tinybrain data` 自行构建。
+**第 1 步：准备数据**。快速开始需要 `data/pretrain_nano.parquet` 和 `data/sft_small.parquet`。可从[来源与致谢](#来源与致谢)下载，也可用 `tinygo data --check` 检查所需输入，再用 `tinygo data` 自行构建。
 
 **第 2 步：训练**。不用写路径：每个阶段写到 `out/small/<阶段>/`，下一个阶段自动从上一个阶段的存档出发；parquet 第一次用时自动切词。
 
 ```bash
-tinybrain pretrain        # 预训练：data/pretrain_nano.parquet → out/small/pretrain
-tinybrain sft             # SFT：data/sft_small.parquet，从上一步出发 → out/small/sft
+tinygo pretrain        # 预训练：data/pretrain_nano.parquet → out/small/pretrain
+tinygo sft             # SFT：data/sft_small.parquet，从上一步出发 → out/small/sft
 ```
 
 **第 3 步：看效果**
 
 ```bash
-tinybrain generate        # 预训练完：续写几个内置的开头
-tinybrain chat --demo     # SFT 完：把内置的 8 个问题挨个问一遍
-tinybrain chat            # 自己聊（--tools 打开计算器和 Python）
-tinybrain serve           # 聊天网页：浏览器打开 http://127.0.0.1:8001/
+tinygo generate        # 预训练完：续写几个内置的开头
+tinygo chat --demo     # SFT 完：把内置的 8 个问题挨个问一遍
+tinygo chat            # 自己聊（--tools 打开计算器和 Python）
+tinygo serve           # 聊天网页：浏览器打开 http://127.0.0.1:8001/
 ```
 
 - 换更大的数据：`--data data/pretrain_mini.parquet`；换尺寸：`--preset medium`（写到 `out/medium/`）。
 - 显存不够：`--batch-size 8 --grad-accum 2`，等效的批大小不变；中断了加 `--resume` 接着跑。
-- 日志每行都有损失、梯度范数、速度和剩余时间；想看曲线用 `tinybrain tensorboard`（见「N 卡训练」一节）。
+- 日志每行都有损失、梯度范数、速度和剩余时间；想看曲线用 `tinygo tensorboard`（见「N 卡训练」一节）。
 - small 从预训练到评测按顺序怎么跑、要开几个终端，见[完整训一遍 small](#完整训一遍-small)；每个阶段的原理见[后训练](#后训练)。
-- 只想看整条链能不能跑：`tinybrain demo` 在一个 2300 万参数的小模型上把所有阶段跑一遍。
-- 没装成命令也没关系：`tinybrain pretrain` 就是 `python -m training.train_pretrain`，每个命令对应的模块见 `tools/cli.py`。
+- 只想看整条链能不能跑：`tinygo demo` 在一个 2300 万参数的小模型上把所有阶段跑一遍。
+- 没装成命令也没关系：`tinygo pretrain` 就是 `python -m training.train_pretrain`，每个命令对应的模块见 `tools/cli.py`。
 
-**全部命令**（`tinybrain <命令> --help` 看全部参数）
+**全部命令**（`tinygo <命令> --help` 看全部参数）
 
 ```
-tinybrain data         做数据：下载、清洗、去重分档、SFT 语料、RL 题目（--check 先看缺什么）
-tinybrain prepare      切词；训练时给 parquet 会自动切，一般不用单独跑
-tinybrain tokenizer    抽样本、训练、评测分词器，导出 HF 格式
-tinybrain pretrain     预训练，也用来退火
-tinybrain sft          SFT：通用和领域专家
-tinybrain distill      MOPD：多老师在线蒸馏
-tinybrain rl           强化学习（GRPO）：RLVR、agent RL、RLAIF
-tinybrain generate     续写：看预训练模型学到了什么
-tinybrain chat         命令行对话（--demo 把内置的问题问一遍）
-tinybrain serve        聊天网页和 OpenAI 兼容的服务
-tinybrain eval         评测：留出集损失、各题型正确率、评审打分
-tinybrain benchmarks   C-Eval、CMMLU、GSM8K
-tinybrain bench        测这张卡的训练速度和显存
-tinybrain report       参数量报告
-tinybrain overfit      过拟合检查：在一小批数据上把损失训到接近 0
-tinybrain diagnose     诊断：生成重复、和损失对不上时，分清是数据、计算路径还是训练不够
-tinybrain demo         在一个 2300 万参数的小模型上把整条链跑一遍
-tinybrain tensorboard  把训练日志同步成 TensorBoard
-tinybrain judge-check  检查评审模型打分靠不靠谱
+tinygo data         做数据：下载、清洗、去重分档、SFT 语料、RL 题目（--check 先看缺什么）
+tinygo prepare      切词；训练时给 parquet 会自动切，一般不用单独跑
+tinygo tokenizer    抽样本、训练、评测分词器，导出 HF 格式
+tinygo pretrain     预训练，也用来退火
+tinygo sft          SFT：通用和领域专家
+tinygo distill      MOPD：多老师在线蒸馏
+tinygo rl           强化学习（GRPO）：RLVR、agent RL、RLAIF
+tinygo generate     续写：看预训练模型学到了什么
+tinygo chat         命令行对话（--demo 把内置的问题问一遍）
+tinygo serve        聊天网页和 OpenAI 兼容的服务
+tinygo eval         评测：留出集损失、各题型正确率、评审打分
+tinygo benchmarks   C-Eval、CMMLU、GSM8K
+tinygo bench        测这张卡的训练速度和显存
+tinygo report       参数量报告
+tinygo overfit      过拟合检查：在一小批数据上把损失训到接近 0
+tinygo diagnose     诊断：生成重复、和损失对不上时，分清是数据、计算路径还是训练不够
+tinygo demo         在一个 2300 万参数的小模型上把整条链跑一遍
+tinygo tensorboard  把训练日志同步成 TensorBoard
+tinygo export       导出包含配置和分词器的 safetensors 模型
+tinygo judge-check  检查评审模型打分靠不靠谱
 ```
 
 ---
@@ -122,36 +124,36 @@ tinybrain judge-check  检查评审模型打分靠不靠谱
 |---|---|---|
 | 1 | 主线：下面的命令按顺序一条条跑 | 一直 |
 | 2 | 评审模型（给 RLAIF 和评测打分） | 第 4、5 步 |
-| 3（可选） | `tinybrain tensorboard` 看曲线 | 想看的时候 |
+| 3（可选） | `tinygo tensorboard` 看曲线 | 想看的时候 |
 
 **终端 1：主线**
 
 ```bash
 # 0. 准备评测数据
-tinybrain benchmarks prepare      # 下载 C-Eval、CMMLU、GSM8K，只在本地评测用
+tinygo benchmarks prepare      # 下载 C-Eval、CMMLU、GSM8K，只在本地评测用
 
 # 1. 预训练：mini 档 50 亿词 → out/small/pretrain
-tinybrain pretrain --data data/pretrain_mini.parquet
+tinygo pretrain --data data/pretrain_mini.parquet
 
 # 2. 退火 → out/small/anneal
 #    先把 SFT 语料切成「整段都算损失」的对话数据，再用九成预训练数据 + 一成对话数据训 0.1 轮
-tinybrain prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all
-tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
+tinygo prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all
+tinygo pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
     --epochs 0.1 --warmup-steps 0 --lr-mult 0.1 --final-lr-frac 0
 
 # 3. SFT：从退火出发 → out/small/sft
-tinybrain sft
+tinygo sft
 
 # 4. 强化学习：agent RL + RLAIF，从 SFT 出发 → out/small/rl（先把终端 2 开起来）
 JUDGE_URL='http://127.0.0.1:8080/v1'  # 如果评审服务在另一台机器上，换成对应地址
-tinybrain rl --judge-url "$JUDGE_URL" --judge-workers 1 --judge-timeout 600
+tinygo rl --judge-url "$JUDGE_URL" --judge-workers 1 --judge-timeout 600
 
 # 5. 评测：留出题 + C-Eval、CMMLU、GSM8K
-tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k \
+tinygo eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k \
     --judge-url "$JUDGE_URL" --judge-workers 1
 ```
 
-每个阶段跑完都可以先看看效果：预训练和退火之后用 `tinybrain generate`，SFT 之后用 `tinybrain chat --demo`。
+每个阶段跑完都可以先看看效果：预训练和退火之后用 `tinygo generate`，SFT 之后用 `tinygo chat --demo`。
 
 **终端 2：评审模型**
 
@@ -175,8 +177,8 @@ tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceva
 ## 聊天网页
 
 ```bash
-tinybrain serve                                           # 用 out/small 里走得最远的存档
-tinybrain serve out/medium/pretrain/ckpt.pt --port 8001   # 指定存档；浏览器打开 http://127.0.0.1:8001/
+tinygo serve                                           # 用 out/small 里走得最远的存档
+tinygo serve out/medium/pretrain/ckpt.pt --port 8001   # 指定存档；浏览器打开 http://127.0.0.1:8001/
 ```
 
 - **续写**：写一个开头，模型接着往下写（黑字是你写的，蓝字是模型写的）。预训练、退火的存档还没学过对话，只能这样用，网页会默认打开续写，并在顶上说明。
@@ -225,7 +227,7 @@ dataset/               数据构建流水线
   sft.py                 SFT 语料
   rl.py                  RL 题目、评测题、MOPD 提示
   build.py               总入口：按顺序跑各步，开跑前检查输入
-tools/                 辅助工具：tinybrain 命令（cli.py）、参数量报告、测速、训练分词器、切词、过拟合检查、整条链演示、评审模型检查、TensorBoard 同步
+tools/                 辅助工具：tinygo 命令（cli.py）、参数量报告、测速、训练分词器、切词、过拟合检查、整条链演示、评审模型检查、TensorBoard 同步
 tokenizer/             正式分词器（tokenizer.model、tokenizer.vocab；tokenizer.json 是逐词一致的 HF 格式，给 gigatoken 用）
 docs/                  设计文档：post-training.md（后训练流程）、rlaif-rubric.md（评审的评分细则）
 data/                  数据（不进仓库）：raw 原始下载、clean 洗好的、inputs 后训练原料、*.parquet 成品、tokens/ 切好的词
@@ -335,7 +337,7 @@ large 档换成混合专家：第 1 层仍是普通前馈；其余各层是 2 �
 | medium | 1152 × 16 | 233M | 190M（约 25 万行 × 宽 48） | 75M | 499M |
 | large | 1280 × 20 | 889M（每个词用到 266M） | 207M（约 20 万行 × 宽 64，占每个词用不到的参数的 25%） | 84M | 1.18B |
 
-large 的前馈层：第 1 层普通前馈，其余各层 48 选 8 的四分之一宽专家加 2 个同宽的共享专家。`tinybrain report large` 打印每个部件的参数量。
+large 的前馈层：第 1 层普通前馈，其余各层 48 选 8 的四分之一宽专家加 2 个同宽的共享专家。`tinygo report large` 打印每个部件的参数量。
 
 ---
 
@@ -347,9 +349,9 @@ large 的前馈层：第 1 层普通前馈，其余各层 48 选 8 的四分之�
 - 0–3 是未知、开头、结束、填充，另留 8 个控制符：`<|im_start|>`、`<|im_end|>` 给对话格式，两个给工具调用，其余备用。
 
 ```bash
-tinybrain tokenizer sample --tokens 40000000      # 重新抽样本
-tinybrain tokenizer train --vocab 32768           # 重新训练
-tinybrain tokenizer eval tokenizer/tokenizer.model
+tinygo tokenizer sample --tokens 40000000      # 重新抽样本
+tinygo tokenizer train --vocab 32768           # 重新训练
+tinygo tokenizer eval tokenizer/tokenizer.model
 ```
 
 ---
@@ -389,7 +391,7 @@ nano、mini、base 严格按下面的配比挑（按真实 token 算）；full �
 混合数据集没有统一的许可证：每篇文档带着 `license` 列，写的是它所属来源的许可证。维基百科、维基文库是 CC BY-SA 3.0（署名、相同方式共享）；百度百科和 shu 的上游没写清楚许可证，标成「待确认」，商用前请自行确认，或者按 `source` 列去掉。
 
 ```bash
-tinybrain data --check              # 每一步要什么、有没有、会产出什么
+tinygo data --check              # 每一步要什么、有没有、会产出什么
 python -m dataset.download wiki_zh --list    # 某个来源会下哪些文件
 python -m dataset.pretrain audit wiki_zh     # 抽查洗出来的结果：随机看几篇、最常重复的行、可疑痕迹
 ```
@@ -399,9 +401,9 @@ python -m dataset.pretrain audit wiki_zh     # 抽查洗出来的结果：随机
 ## 预训练
 
 ```bash
-tinybrain pretrain                                        # 默认：small，data/pretrain_nano.parquet → out/small/pretrain
-tinybrain pretrain --data data/pretrain_mini.parquet --seq-len 2048 --batch-size 16
-tinybrain pretrain --help     # 全部参数：模型（--dim、--n-layers……）、各组学习率、梯度裁剪、记录和存档
+tinygo pretrain                                        # 默认：small，data/pretrain_nano.parquet → out/small/pretrain
+tinygo pretrain --data data/pretrain_mini.parquet --seq-len 2048 --batch-size 16
+tinygo pretrain --help     # 全部参数：模型（--dim、--n-layers……）、各组学习率、梯度裁剪、记录和存档
 ```
 
 ### 损失
@@ -465,8 +467,8 @@ Muon 管的矩阵另外带解耦的权重衰减，默认 0.1（`--weight-decay`�
 余弦要在开始时定死总步数；WSD 的恒定段里，任何一个存档都能分出一支单独退火，主线接着训。这样训到一半就能拿到一个退过火、能用的模型，再决定要不要训满。短退火能达到和余弦相当的效果，见 Hägele 等 2024，*Scaling Laws and Compute-Optimal Training Beyond Fixed Training Durations*。
 
 ```bash
-tinybrain pretrain --schedule wsd                                                  # 主线
-tinybrain pretrain --cooldown-from out/small/pretrain/ckpt.pt --cooldown-steps 3000   # 分支 → out/small/cooldown-<步数>
+tinygo pretrain --schedule wsd                                                  # 主线
+tinygo pretrain --cooldown-from out/small/pretrain/ckpt.pt --cooldown-steps 3000   # 分支 → out/small/cooldown-<步数>
 ```
 
 退火分支连优化器状态一起接着主线走，数据也接着主线往后取；学习率从主线在这一步本来的值降到 `--final-lr-frac`（不写就和主线一样）。片段长度、批大小、优化器设置都取自存档。余弦训练的存档也能分支，可以用来量「现在退火能降多少」。和[退火](#退火)那一步的 `--init` 不同：`--init` 只取模型参数，优化器从头开始。
@@ -484,16 +486,16 @@ medium/large ：预训练(base / full) → 退火 → SFT → 领域专家（数
 每档都能单独跑通，不依赖别的尺寸。完整的设计和取舍见 [docs/post-training.md](docs/post-training.md)。
 
 ```bash
-tinybrain data sft rl       # 后训练数据：SFT 语料、RL 题目、评测题、MOPD 提示
+tinygo data sft rl       # 后训练数据：SFT 语料、RL 题目、评测题、MOPD 提示
 ```
 
 各阶段都写到同一个运行目录（默认 `out/small`，换尺寸用 `--run out/medium`），不写 `--init` 时自动从上一个阶段的存档出发：
 
 ```bash
-tinybrain sft                                            # SFT：从退火（没有就预训练）出发 → out/small/sft
-tinybrain sft --data data/sft_expert_math.parquet        # 领域专家 → out/small/expert_math（代码、文学同理）
-tinybrain distill                                        # MOPD：学生是 sft，老师是所有 expert_<领域> → out/small/mopd
-tinybrain rl --judge-url http://localhost:8000/v1        # RL：从 sft 出发，data/rl_small.parquet → out/small/rl
+tinygo sft                                            # SFT：从退火（没有就预训练）出发 → out/small/sft
+tinygo sft --data data/sft_expert_math.parquet        # 领域专家 → out/small/expert_math（代码、文学同理）
+tinygo distill                                        # MOPD：学生是 sft，老师是所有 expert_<领域> → out/small/mopd
+tinygo rl --judge-url http://localhost:8000/v1        # RL：从 sft 出发，data/rl_small.parquet → out/small/rl
 ```
 
 ### 退火
@@ -501,8 +503,8 @@ tinybrain rl --judge-url http://localhost:8000/v1        # RL：从 sft 出发�
 预训练最后一段（默认最后 10% 的步数）换数据接着训：九成预训练数据 + 一成对话格式的数据（整段都算损失），学习率从 0.1 倍降到 0。用的还是 `train_pretrain.py`：
 
 ```bash
-tinybrain prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all    # 一成的对话数据：整段都算损失
-tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
+tinygo prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all    # 一成的对话数据：整段都算损失
+tinygo pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
     --epochs 0.1 --warmup-steps 0 --lr-mult 0.1 --final-lr-frac 0          # 给了 --init 默认写到 out/small/anneal
 ```
 
@@ -584,7 +586,7 @@ RLVR、agent RL、RLAIF 用的是同一个训练器，区别只在题目和奖�
 
 **格律分**（`training/rewards/poetry.py`）：句数、每句字数要对，否则 0；对了以后 <img src="docs/images/readme-math/prosody-reward.svg" alt="格律分 = 0.3 + 0.35 · 押韵分 + 0.35 · 平仄分" align="middle">。押韵看偶数句末字是否同韵且平声；平仄按「一三五不论，二四六分明」，在仄起、平起两种格式里取对得更好的。平仄和韵部用 pypinyin 按普通话近似，入声字会判错（这是已知的简化）。
 
-**RLAIF 的评审模型**：Qwen3.8-27B（Apache-2.0），按中文评分细则（`docs/rlaif-rubric.md`：通用、写作、古文、诗词四个领域）打 1–10 分，不开思考模式。显卡上用 vLLM 跑 FP8 版，Mac 上用 `mlx_lm.server` 跑 4-bit 版（一次只算一个请求，要加 `--judge-workers 1`）。`tinybrain judge-check` 用好回答和故意弄坏的回答（截断、答非所问、车轱辘话、诗的字序打乱）检查评审分不分得清好坏。
+**RLAIF 的评审模型**：Qwen3.8-27B（Apache-2.0），按中文评分细则（`docs/rlaif-rubric.md`：通用、写作、古文、诗词四个领域）打 1–10 分，不开思考模式。显卡上用 vLLM 跑 FP8 版，Mac 上用 `mlx_lm.server` 跑 4-bit 版（一次只算一个请求，要加 `--judge-workers 1`）。`tinygo judge-check` 用好回答和故意弄坏的回答（截断、答非所问、车轱辘话、诗的字序打乱）检查评审分不分得清好坏。
 
 题目和评测题由 `dataset/rl.py` 生成：每种题先留出一份当评测题，和 RL 题、SFT 都不重复。
 
@@ -594,17 +596,17 @@ RLVR、agent RL、RLAIF 用的是同一个训练器，区别只在题目和奖�
 
 CUDA 训练加速使用 **Liger Kernel 0.8.5+**（融合输出层交叉熵、静态 mHC 读写、RMSNorm、RoPE、ReLU²）和 **PyTorch FlexAttention**（原生 GQA、滑动窗口）。Linux 可安装 `pip install -e ".[data,cuda]"`；Windows 先准备匹配 PyTorch 的 `triton-windows`，再安装 `pip install --no-deps liger-kernel==0.8.5`，避免 pip 拉取不支持 Windows 的标准 Triton 包。CPU 保留普通 PyTorch 实现。
 
-`tinybrain bench small --batch 16 --seq 2048` 测完整的前向、反向和优化器更新；CUDA 默认使用选择性激活重计算，可用 `--checkpoint-policy full` 改为整层重算，或 `--no-checkpoint` 关闭重算。主干逐层编译，Engram 查表、流入口、出口和 Sinkhorn 也参与编译。mHC 使用 Liger 原有内核直接写入输入精度的缓冲区，减少 FP32 临时张量；内核内仍用 FP32 计算。预训练和 SFT 使用同一套融合损失与加速算子。
+`tinygo bench small --batch 16 --seq 2048` 测完整的前向、反向和优化器更新；CUDA 默认使用选择性激活重计算，可用 `--checkpoint-policy full` 改为整层重算，或 `--no-checkpoint` 关闭重算。主干逐层编译，Engram 查表、流入口、出口和 Sinkhorn 也参与编译。mHC 使用 Liger 原有内核直接写入输入精度的缓冲区，减少 FP32 临时张量；内核内仍用 FP32 计算。预训练和 SFT 使用同一套融合损失与加速算子。
 
-预训练和 bench 可加 `--cuda-graph` 捕获融合 Adam 与自定义 Muon 的更新图，学习率保留在设备张量中逐步更新；检查点仍保存完整优化器状态。`--autotune` 搜索固定形状下的矩阵和注意力内核，首次编译较久。预训练默认每 50 步记录日志，可用 `--log-every` 修改。例如 `tinybrain pretrain --data data/tokens/base --out out/small/pretrain --preset small --seq-len 2048 --batch-size 16 --epochs 1 --cuda-graph --log-every 50`；从已有存档继续时加 `--resume`。
+预训练和 bench 可加 `--cuda-graph` 捕获融合 Adam 与自定义 Muon 的更新图，学习率保留在设备张量中逐步更新；检查点仍保存完整优化器状态。`--autotune` 搜索固定形状下的矩阵和注意力内核，首次编译较久。预训练默认每 50 步记录日志，可用 `--log-every` 修改。例如 `tinygo pretrain --data data/tokens/base --out out/small/pretrain --preset small --seq-len 2048 --batch-size 16 --epochs 1 --cuda-graph --log-every 50`；从已有存档继续时加 `--resume`。
 
 CUDA 训练时把 Q、K、V 投影合并成一次矩阵乘法，参数和检查点中仍分别保存三组权重。验证和带缓存的生成保留原来的投影路径。
 
 可以装 `pip install -e ".[cudnn]"`（`nvidia-cudnn-frontend>=1.32.3,<1.33`，要 PyTorch 2.13+），用 `--attention-backend cudnn` 换成 NVIDIA 原生的滑动窗口/GQA 前向和反向；默认仍是 FlexAttention。编译路径还把 mHC 读流和 RMSNorm 融在一起，并让 FFN 的矩阵乘法和 ReLU² 一起搜索融合方式；模型结构、词表和优化器状态的精度不变。`--gpu-memory-fraction` 在建模型之前给 PyTorch 设显存上限。验证的抽样批大小（`--eval-batch-size`）和实际前向的微批（`--eval-micro-batch-size`）分开指定：换了训练微批，验证片段仍和以前一样，历史损失可以直接比。
 
 ```bash
-tinybrain pretrain --data data/tokens/base --out out/medium/pretrain --preset medium --seq-len 2048 --batch-size 4 --grad-accum 4 --epochs 1 --autotune --attention-backend cudnn --gpu-memory-fraction 0.85 --checkpoint-policy selective --eval-batch-size 16 --eval-micro-batch-size 4 --log-every 50
-tinybrain bench medium --batch 4 --grad-accum 4 --seq 2048 --autotune --attention-backend cudnn --gpu-memory-fraction 0.85
+tinygo pretrain --data data/tokens/base --out out/medium/pretrain --preset medium --seq-len 2048 --batch-size 4 --grad-accum 4 --epochs 1 --autotune --attention-backend cudnn --gpu-memory-fraction 0.85 --checkpoint-policy selective --eval-batch-size 16 --eval-micro-batch-size 4 --log-every 50
+tinygo bench medium --batch 4 --grad-accum 4 --seq 2048 --autotune --attention-backend cudnn --gpu-memory-fraction 0.85
 ```
 
 **多卡（ZeRO-1）**：预训练用 torchrun 启动就是多卡，每张卡一个进程（NCCL），代码在 `training/distributed.py`。`--batch-size` 是每张卡的批大小，每步一共「批大小 × 累积 × 卡数」个片段。
@@ -620,18 +622,18 @@ torchrun --standalone --nproc-per-node 8 -m training.train_pretrain --preset med
 - MoE 的路由偏置按各卡负载的平均来调。多卡时不能用 `--cuda-graph`、`--offload-adam`。
 - 现在只有预训练（含退火）支持多卡，SFT、蒸馏、RL 还是单卡。
 
-Windows 默认编码为 GBK 时，先设 `$env:PYTHONUTF8 = 1`（PowerShell）再运行 `tinybrain …`，或者用 `python -X utf8 -m tools.bench small --batch 8 --seq 4096`。如果 Triton 默认缓存目录报路径错误，可在 PowerShell 中先设置 `$env:TRITON_CACHE_DIR = "$PWD\.cache\triton"` 和 `$env:TORCHINDUCTOR_CACHE_DIR = "$PWD\.cache\inductor"`。
+Windows 默认编码为 GBK 时，先设 `$env:PYTHONUTF8 = 1`（PowerShell）再运行 `tinygo …`，或者用 `python -X utf8 -m tools.bench small --batch 8 --seq 4096`。如果 Triton 默认缓存目录报路径错误，可在 PowerShell 中先设置 `$env:TRITON_CACHE_DIR = "$PWD\.cache\triton"` 和 `$env:TORCHINDUCTOR_CACHE_DIR = "$PWD\.cache\inductor"`。
 
-训练中也可以接入 TensorBoard：安装 `pip install -e ".[monitor]"`，运行 `tinybrain tensorboard --run out/small/pretrain`，再运行 `python -m tensorboard.main --logdir out/small/pretrain/tensorboard --host 127.0.0.1 --port 6006`，打开 `http://127.0.0.1:6006`。同步工具会补录已有 JSONL 指标并持续追加训练/验证损失、各参数组学习率、吞吐和进度；不需要重启训练。历史数据的横轴使用训练步数。
+训练中也可以接入 TensorBoard：安装 `pip install -e ".[monitor]"`，运行 `tinygo tensorboard --run out/small/pretrain`，再运行 `python -m tensorboard.main --logdir out/small/pretrain/tensorboard --host 127.0.0.1 --port 6006`，打开 `http://127.0.0.1:6006`。同步工具会补录已有 JSONL 指标并持续追加训练/验证损失、各参数组学习率、吞吐和进度；不需要重启训练。历史数据的横轴使用训练步数。
 
 ---
 
 ## 评测
 
 ```bash
-tinybrain benchmarks prepare                                             # 下载 C-Eval、CMMLU、GSM8K（只在本地评测用）
-tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k --judge-url …
-tinybrain benchmarks run out/small/pretrain/ckpt.pt --shots 5            # 基座模型：不套对话格式，带例题
+tinygo benchmarks prepare                                             # 下载 C-Eval、CMMLU、GSM8K（只在本地评测用）
+tinygo eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k --judge-url …
+tinygo benchmarks run out/small/pretrain/ckpt.pt --shots 5            # 基座模型：不套对话格式，带例题
 ```
 
 - **留出集损失**：按类别（中文、百科、代码、数学、古文……）看后训练有没有把预训练学到的东西训坏；
@@ -646,13 +648,13 @@ C-Eval 是 CC BY-NC-SA 4.0、CMMLU 是 CC BY-NC 4.0，只下载到本地评测�
 ## 推理
 
 ```bash
-tinybrain chat --tools                         # 命令行对话：默认用 out/small 里走得最远的存档；--tools 打开计算器和 Python
-tinybrain serve out/small/rl/ckpt.pt --port 8001  # 聊天网页，以及 OpenAI 兼容的接口（见下）
+tinygo chat --tools                         # 命令行对话：默认用 out/small 里走得最远的存档；--tools 打开计算器和 Python
+tinygo serve out/small/rl/ckpt.pt --port 8001  # 聊天网页，以及 OpenAI 兼容的接口（见下）
 ```
 
-`tinybrain serve` 的接口：`POST /v1/chat/completions`（对话，支持工具调用）、`POST /v1/completions`（续写，提示前面自动加文档结束符）、`GET /v1/models`、`GET /v1/info`（存档、阶段、步数、参数量）。请求里写 `"stream": true` 就按 OpenAI 的格式边生成边推送；读的一方断开，服务端就不再往下生成。
+`tinygo serve` 的接口：`POST /v1/chat/completions`（对话，支持工具调用）、`POST /v1/completions`（续写，提示前面自动加文档结束符）、`GET /v1/models`、`GET /v1/info`（存档、阶段、步数、参数量）。请求里写 `"stream": true` 就按 OpenAI 的格式边生成边推送；读的一方断开，服务端就不再往下生成。
 
-续写和生成式评测默认温度 0.8、只在概率最高的 50 个词里采样；`tinybrain generate`、`tinybrain eval`、`tinybrain benchmarks run` 都可以用 `--temperature`、`--top-k`、`--seed` 改，默认种子 0，评测结果里记下采样参数。`--temperature 0` 是每步取概率最大的词。预训练续写在提示前加文档结束符，生成出结束符就停。
+续写和生成式评测默认温度 0.8、只在概率最高的 50 个词里采样；`tinygo generate`、`tinygo eval`、`tinygo benchmarks run` 都可以用 `--temperature`、`--top-k`、`--seed` 改，默认种子 0，评测结果里记下采样参数。`--temperature 0` 是每步取概率最大的词。预训练续写在提示前加文档结束符，生成出结束符就停。
 
 CUDA 上生成走静态缓存：键值缓存按最大长度预先分配，每一步原地写入，形状完全固定，整步用 `torch.compile(mode="reduce-overhead")` 录成 CUDA graph（gpt-fast 的做法）。CPU、MPS 上走普通的带缓存生成，两条路径结果一样（有测试对照）。
 
@@ -689,7 +691,7 @@ print(text)
 把自己训的存档导出成这样的发布包：
 
 ```bash
-tinybrain export --checkpoint out/medium/rl/ckpt.pt --out release/my-medium --stage rl
+tinygo export --checkpoint out/medium/rl/ckpt.pt --out release/my-medium --stage rl
 ```
 
 导出时逐个张量和原存档比对，再在同一段输入上比较两边的输出，完全一致才写出目录；目标目录已经存在就不覆盖。

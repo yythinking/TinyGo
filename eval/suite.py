@@ -1,6 +1,6 @@
 """评测一个存档：
 
-    tinybrain eval out/demo/sft/ckpt.pt --tasks data/eval_tasks.parquet --judge-url http://localhost:8080/v1 --out out/demo/sft/eval.json
+    tinygo eval out/demo/sft/ckpt.pt --tasks data/eval_tasks.parquet --judge-url http://localhost:8080/v1 --out out/demo/sft/eval.json
 
   1. 留出文档（out/tokenizer/heldout.jsonl，分好类别）上每个类别的平均损失：看后训练有没有把预训练学到的东西训坏；
   2. 题目（RL 题目的格式）默认温度 0.8、top-k 50 采样作答，按各自的 reward 打分：数学、代码、工具调用是对错，评审题和诗词题要给评审模型；

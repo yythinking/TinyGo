@@ -284,10 +284,10 @@ def restore_rng(state: dict | None) -> None:
 # ---------- 运行目录：一次完整训练的各个阶段都放在同一个目录下（默认 out/small），每个阶段写到 <运行目录>/<阶段>/ckpt.pt，
 # 下一个阶段不写 --init 时，就从这里找上一个阶段的存档。
 
-STAGE_COMMANDS = {"pretrain": "tinybrain pretrain（也就是 python -m training.train_pretrain）",
-                  "anneal": "tinybrain pretrain --init <预训练的存档>（也就是 python -m training.train_pretrain）",
-                  "sft": "tinybrain sft（也就是 python -m training.train_sft）", "mopd": "tinybrain distill（也就是 python -m training.train_distill）",
-                  "rl": "tinybrain rl（也就是 python -m training.train_rl）"}
+STAGE_COMMANDS = {"pretrain": "tinygo pretrain（也就是 python -m training.train_pretrain）",
+                  "anneal": "tinygo pretrain --init <预训练的存档>（也就是 python -m training.train_pretrain）",
+                  "sft": "tinygo sft（也就是 python -m training.train_sft）", "mopd": "tinygo distill（也就是 python -m training.train_distill）",
+                  "rl": "tinygo rl（也就是 python -m training.train_rl）"}
 
 
 def find_stage(run, stages: tuple) -> Path:

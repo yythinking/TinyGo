@@ -1,4 +1,4 @@
-"""打印一个预设的参数量明细和各部件的占比：tinybrain report small"""
+"""打印一个预设的参数量明细和各部件的占比：tinygo report small"""
 import argparse
 
 from lm import PRESETS, LanguageModel, preset

@@ -1,8 +1,8 @@
 """诊断：生成的文字打转、不停、和损失对不上时，分清问题出在数据、计算路径还是训练得不够。只读存档，不改任何东西。
 
-    tinybrain diagnose                                   # out/small 里的预训练存档，数据取训练时用的那份
-    tinybrain diagnose out/small/pretrain/ckpt.pt --data data/tokens/pretrain_base
-    tinybrain diagnose --device cpu                      # 显卡正在训练、不想碰它时（少了 CUDA 上的几项对比）
+    tinygo diagnose                                   # out/small 里的预训练存档，数据取训练时用的那份
+    tinygo diagnose out/small/pretrain/ckpt.pt --data data/tokens/pretrain_base
+    tinygo diagnose --device cpu                      # 显卡正在训练、不想碰它时（少了 CUDA 上的几项对比）
 
 训练还在跑时也能用：读的是最近一次存下的 ckpt.pt，默认设置下占显存 2 GB 以内。依次检查：
 
@@ -20,7 +20,7 @@
   6. 结束符      真正的文档结尾处，模型给结束符的概率，对比别处。
   8. 尾部分语言  在纯中文的上文里，模型给拉丁字母片段、假名这些词多少概率，对比它们实际出现的比例。总量对得上（第 5 项）
                  不代表成分对：模型可能知道「这里有一成机会出一个生僻词」，却不知道该是哪一类。差得多时，不截断的采样会抽出外文片段。
-  7. 采样        同一个开头（前面放文档结束符，和 tinybrain generate 一样），贪心、默认采样、温度 1 各续写一次，报告 4 词片段的重复比例。
+  7. 采样        同一个开头（前面放文档结束符，和 tinygo generate 一样），贪心、默认采样、温度 1 各续写一次，报告 4 词片段的重复比例。
 """
 import argparse
 import copy

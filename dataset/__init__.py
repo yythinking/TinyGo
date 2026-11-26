@@ -7,7 +7,7 @@
     mix.py       去重、配比、分四档写出、检查、生成数据集说明
     sft.py       SFT 语料
     rl.py        RL 题目、评测题、MOPD 提示
-    build.py     总入口：tinybrain data（--check 只检查每一步的输入）
+    build.py     总入口：tinygo data（--check 只检查每一步的输入）
 
 数据都在 data/ 下，不进仓库：data/raw（原始下载）、data/clean（洗好的）、data/inputs（后训练原料）、data/*.parquet（成品）。
 """

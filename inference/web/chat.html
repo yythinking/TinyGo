@@ -393,7 +393,7 @@ if (matchMedia("(max-width: 760px)").matches) document.querySelector(".settings"
     state.info = await response.json();
     showInfo(state.info);
   } catch {
-    showNotice("连不上 tinybrain serve：确认它还在运行，再刷新这个页面。", true);
+    showNotice("连不上 tinygo serve：确认它还在运行，再刷新这个页面。", true);
   }
   setMode(state.mode || (state.info && state.info.kind === "chat" ? "chat" : "continue"));
   $("input").focus();

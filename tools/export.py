@@ -10,7 +10,7 @@ def main(argv=None):
     parser.add_argument('--tokenizer', default='tokenizer/tokenizer.model')
     parser.add_argument('--stage', choices=['pretrain','anneal','sft','mopd','rl'], required=True)
     parser.add_argument('--threads', type=int, default=4)
-    parser.add_argument('--runtime-wheel', help='Include the matching TinyBrain runtime wheel in the release bundle')
+    parser.add_argument('--runtime-wheel', help='Include the matching TinyGo runtime wheel in the release bundle')
     args = parser.parse_args(argv)
     import torch
     torch.set_num_threads(args.threads)

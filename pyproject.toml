@@ -22,10 +22,10 @@ artifact = ["safetensors>=0.4"]
 serve = ["fastapi>=0.115", "uvicorn>=0.30", "safetensors>=0.4"]
 
 [project.scripts]
-tinybrain = "tools.cli:main"   # pip install -e . 之后：tinybrain pretrain、tinybrain chat……
+tinygo = "tools.cli:main"   # pip install -e . 之后：tinygo pretrain、tinygo chat……
 
 [tool.setuptools.packages.find]
 include = ["lm*", "training*", "inference*", "eval*", "tools*", "dataset*"]
 
 [tool.setuptools.package-data]
-inference = ["web/*.html"]  # tinybrain serve 的聊天网页
+inference = ["web/*.html"]  # tinygo serve 的聊天网页

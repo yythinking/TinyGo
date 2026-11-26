@@ -98,12 +98,12 @@ def export_checkpoint(source, destination, tokenizer, stage, verify=True, runtim
         shutil.copyfile(runtime_wheel,pending/runtime_wheel.name)
         install=f'python -m pip install --force-reinstall --no-deps "{runtime_wheel.name}"\npython -m pip install torch sentencepiece numpy safetensors\n'
     else:
-        install='Install this delivery revision of TinyBrain with its artifact extra: python -m pip install ".[artifact]"\n'
+        install='Install the runtime from the matching TinyGo source checkout.\npython -m pip install ".[artifact]"\n'
     command='chat' if stage not in ('pretrain','anneal') else 'generate'
     (pending/'README.txt').write_text(
-        'TinyBrain inference bundle\n\n'+install+'\nRun from this bundle directory:\n'
-        +f'tinybrain {command} . --device auto --temperature 0.8 --top-k 50\n\n'
-        +'The weights, architecture configuration and tokenizer are included. The TinyBrain runtime implements this custom architecture.\n'
+        'TinyGo inference bundle\n\n'+install+'\nRun from this bundle directory:\n'
+        +f'tinygo {command} . --device auto --temperature 0.8 --top-k 50\n\n'
+        +'The weights, architecture configuration and tokenizer are included. The TinyGo runtime implements this custom architecture.\n'
         +'artifact.json records checksums and export round-trip verification; generation quality is assessed separately.\n',encoding='utf-8')
     manifest = dict(format=FORMAT, architecture='TinyBrain LanguageModel', stage=stage,
                     step=int(state.get('step', 0)), training_progress=state.get('training_progress', {}),

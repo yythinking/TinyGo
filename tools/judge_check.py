@@ -1,6 +1,6 @@
 """检查评审模型和评分细则靠不靠谱：拿语料里的好回答，和故意弄坏的版本一起给评审打分，看它能不能把好的排在前面。
 
-    tinybrain judge-check --judge-url http://127.0.0.1:8080/v1 --judge-model out/models/Qwen3.8-27B-4bit --judge-workers 2 --judge-timeout 300
+    tinygo judge-check --judge-url http://127.0.0.1:8080/v1 --judge-model out/models/Qwen3.8-27B-4bit --judge-workers 2 --judge-timeout 300
 
 弄坏的方式：截断（只留前四分之一）、答非所问（换成别的题的回答）、车轱辘话（第一句重复到原来的长度）；
 诗词另加一种：每行里的字打乱（体裁、字数不变，意思没了，专门看评审是不是只看格式）。
