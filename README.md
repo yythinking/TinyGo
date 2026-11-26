@@ -1,123 +1,68 @@
-<h1 align="center"><img src="docs/images/tinybrain.svg" alt="tinybrain" width="100%"></h1>
+# TinyGo
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-2140d6)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-2140d6)](pyproject.toml)
 [![PyTorch 2.5+](https://img.shields.io/badge/PyTorch-2.5%2B-e9482b)](https://pytorch.org)
-[![数据集 ModelScope](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE%E9%9B%86-ModelScope-ffd21f)](https://www.modelscope.cn/datasets/caiwangzsnm/tinybrain-dataset)
-[![视频 B 站](https://img.shields.io/badge/%E8%A7%86%E9%A2%91-B%20%E7%AB%99-fb7299)](https://www.bilibili.com/video/BV1kqsj6EEtT/)
-[![模型 ModelScope](https://img.shields.io/badge/%E6%A8%A1%E5%9E%8B-ModelScope-15965a)](https://www.modelscope.cn/models/caiwangzsnm/TinyBrain-Medium-Chat-20261119-RC1)
-[![GitHub stars](https://img.shields.io/github/stars/logitcai/tinybrain?color=15965a)](https://github.com/logitcai/tinybrain/stargazers)
 
-**从一个字开始，自己做一个中文大模型。**
+[English](README.en.md)
 
-60B token 开源中文数据 · 自己训的分词器 · 预训练到强化学习的全流程 · 专门为古文和诗词练过
+TinyGo 是一个以中文为主的小型语言模型项目，使用 PyTorch 实现，包含分词器、数据处理、训练、评测和本地推理。
 
-[English](README.en.md) · [视频介绍（B 站）](https://www.bilibili.com/video/BV1kqsj6EEtT/) · [数据集（ModelScope）](https://www.modelscope.cn/datasets/caiwangzsnm/tinybrain-dataset)
-
-tinybrain 是一个从零写起的中文小模型项目。和 [MiniMind](https://github.com/jingyaogong/minimind)、[nanochat](https://github.com/karpathy/nanochat) 一样，所有代码都是自己写的、能一行行读懂；不一样的是：
-
-- **数据也从零做**：从 26 个公开来源下载、清洗、跨来源去重、按配比和质量分成四档（1B / 5B / 20B / 60B token），这套数据叫 **tinybrain dataset**，做数据的每一步代码都在 `dataset/` 里。
-- **结构用新东西**：多流残差（mHC）、Engram 查表记忆、3:1 的滑动窗口注意力、可选的混合专家（MoE），优化器是 Muon。
-- **后训练做全套**：SFT → 领域专家 → 多老师在线蒸馏（MOPD）→ 强化学习（RLVR、agent RL、RLAIF），10 种题型、各自的判分器。
-- **以中文为主**：分词器、数据配比、评分细则都按中文定，另外专门放了古文、诗词、鲁迅全集。
-
-## 现状
-
-2026-11-19 发布了 small 和 medium 的第一版对话权重（RC1，研究预览）。两个都走完了整条链：预训练（base 档）→ 退火 → SFT → 专家蒸馏 → 强化学习，最后一段是用 Qwen3.8-27B 当评审的 RLAIF。
-
-| 模型 | 参数量 | 权重（FP32 safetensors） | 评审判为可用的回答 |
-|---|---:|---:|---:|
-| [Small Chat RC1](https://www.modelscope.cn/models/caiwangzsnm/TinyBrain-Small-Chat-20261119-RC1) | 1.67 亿 | 639 MiB | 13/180 |
-| [Medium Chat RC1](https://www.modelscope.cn/models/caiwangzsnm/TinyBrain-Medium-Chat-20261119-RC1) | 4.99 亿 | 1.86 GiB | 29/180 |
-
-「可用」是这样算的：90 道有参考答案的开发题，每题采样两次（温度 1.0，比平时聊天随机得多），Qwen3.8-27B-FP8 对照参考答案逐条判。独立的终评还没做完。
-
-**实际用起来是什么样**：下面是 medium 在 Mac 上的原话（温度 0.8，`tinybrain chat --demo`），好的坏的都放。
-
-| 问 | medium 的回答 | |
-|---|---|---|
-| 用 Python 写一个判断质数的函数。 | `def is_prime(n)`：`n <= 1` 返回 False，再从 2 试除到 `int(n**0.5)` | 对 |
-| 用一段话解释什么是机器学习。 | 机器学习是一种让计算机自动从数据中学习的能力，而不仅仅是遵循一些规则。通过算法，机器学习可以识别数据中的模式并做出预测和决策。 | 对 |
-| 写一首关于秋天的五言绝句。 | 秋风萧萧动客怀，落叶飘零满地飞。寒气袭人衣袖冷，不知人在稻田中。 | 有意境，但写成了七言 |
-| 小明有 5 个苹果，又买了 3 个，吃掉 2 个，还剩几个？ | 5 + 3 = 8，8 - 2 = 6，6 + 2 = 8 | 算到 6 是对的，又多算了一步 |
-| 为什么天空是蓝色的？ | 是因为空气中的氧气（O₂）含量较高……二氧化碳在大气中遇冷会转变为水蒸气…… | 编的 |
-| 推荐三本适合入门的中国历史书。 | 张光直《中国史纲》、陈子展《中国史》、钱穆《中国历史研究法》 | 钱穆那本是真的；《中国史纲》是张荫麟写的 |
-
-语言通顺、格式像样，但**事实和算术靠不住**，别拿它查资料。这是 5 亿参数、200 亿 token 这个量级的正常水平。
-
-### 下载下来直接用
-
-```bash
-git clone https://github.com/logitcai/tinybrain && cd tinybrain
-pip install -e ".[artifact]"           # 推理只要 torch、sentencepiece、numpy、safetensors
-pip install modelscope
-modelscope download --model caiwangzsnm/TinyBrain-Medium-Chat-20261119-RC1 --local_dir tinybrain-medium
-tinybrain chat tinybrain-medium        # 命令行对话；加 --demo 把内置的问题问一遍
-tinybrain serve tinybrain-medium       # 聊天网页和 OpenAI 兼容接口，启动后会打印网址
-```
-
-small 把命令里的 Medium 换成 Small。在 Python 里怎么用、发布包里有什么，见[推理](#用发布的-safetensors)。不想克隆代码的话，模型目录里带了运行时的安装包：`pip install tinybrain-medium/tinybrain-0.1.0-py3-none-any.whl safetensors`。
-
-medium 预训练到约 181 亿 token 时切到退火，那时训练损失约 2.37。
-
----
+- **模型**：多流残差（mHC）、Engram 查表记忆、3:1 的滑动窗口注意力、可选的混合专家（MoE）。
+- **数据**：从公开来源下载、清洗、跨来源去重，按配比和质量分档。
+- **训练**：预训练、退火、SFT、领域专家、多老师在线蒸馏（MOPD）和强化学习（RLVR、agent RL、RLAIF）。
+- **中文**：分词器、数据配比和评分细则面向中文，包含古文和诗词。
 
 ## 目录
 
-- [现状](#现状)
-- [要花多少](#要花多少)
 - [快速开始](#快速开始)
 - [完整训一遍 small](#完整训一遍-small)
 - [聊天网页](#聊天网页)
 - [代码结构](#代码结构)
 - [模型](#模型)
 - [分词器](#分词器)
-- [数据集：tinybrain dataset](#数据集tinybrain-dataset)
+- [数据集](#数据集)
 - [预训练](#预训练)
 - [后训练](#后训练)
 - [N 卡训练：加速、Windows、监控](#n-卡训练加速windows监控)
 - [评测](#评测)
 - [推理](#推理)
-- [演示结果](#演示结果)
-- [还没做的](#还没做的)
-- [联系与赞助](#联系与赞助)
 - [许可证](#许可证)
 - [参考](#参考)
-
----
-
-## 要花多少
-
-| 硬件 | 模型 | 数据 | 预训练一遍 |
-|---|---|---|---|
-| RTX 5070 Ti 16GB | small（主干 6400 万参数，连词向量和记忆表共 1.67 亿） | nano（10 亿 token） | 约 4 小时 |
-| RTX 5070 Ti 16GB | small | mini（50 亿 token） | 约 20 小时 |
-| RTX 5070 Ti 16GB | small | base（202 亿 token） | 约 3.4 天 |
-| M4 Max | 演示模型（2300 万参数） | 9000 万 token，加上整套后训练 | 共 198 分钟 |
-
-5070 Ti 这几行是按实测的速度换算的：16 × 2048、约 7 万 token/秒（0.46–0.47 秒一步），显存峰值约 12.5 GiB，设置见[N 卡训练](#n-卡训练加速windows监控)。
-后训练的时间还没在显卡上量过。
+- [致谢与资源](#致谢与资源)
 
 ---
 
 ## 快速开始
 
-**第 0 步：装好**
+需要 Python 3.11+ 和 PyTorch 2.5+。安装后使用的命令是 `tinybrain`。
 
 ```bash
-git clone https://github.com/logitcai/tinybrain && cd tinybrain
-pip install -e ".[data]"          # 要 Python 3.11+、PyTorch 2.5+（用 PyTorch 自带的 Muon 要 2.9+）；装完就有 tinybrain 命令
-pip install -e ".[cuda,fast]"     # 可选：N 卡训练加速（Liger）、快一个数量级的切词（gigatoken）；Windows 先看「N 卡训练」一节
+git clone https://github.com/yythinking/TinyGo.git && cd TinyGo
+pip install -e ".[artifact]"
 ```
 
-**第 1 步：下数据**（[ModelScope](https://www.modelscope.cn/datasets/caiwangzsnm/tinybrain-dataset)）
+### 本地对话
+
+从[致谢与资源](#致谢与资源)下载 Small Chat 权重后，在终端里对话，或者启动网页：
 
 ```bash
-modelscope download --dataset caiwangzsnm/tinybrain-dataset pretrain_nano.parquet posttrain/sft_small.parquet --local_dir data
-mv data/posttrain/* data/
+tinybrain chat out/models/small-chat
+tinybrain serve out/models/small-chat
 ```
 
-也可以自己从头做：`tinybrain data --check` 先看每一步要什么，再 `tinybrain data`。
+网页地址是 `http://127.0.0.1:8001/`。给 `chat` 加 `--demo` 可以试一遍内置问题。
+
+### 从头训练
+
+安装数据处理依赖。NVIDIA 加速和快速切词可选，Windows 用户先看 [N 卡训练](#n-卡训练加速windows监控)。如需使用 PyTorch 自带的 Muon，需要 PyTorch 2.9+。
+
+```bash
+pip install -e ".[data]"
+# 可选：pip install -e ".[cuda,fast]"
+```
+
+**第 1 步：准备数据**。快速开始需要 `data/pretrain_nano.parquet` 和 `data/sft_small.parquet`。可从[致谢与资源](#致谢与资源)下载，也可用 `tinybrain data --check` 检查所需输入，再用 `tinybrain data` 自行构建。
 
 **第 2 步：训练**。不用写路径：每个阶段写到 `out/small/<阶段>/`，下一个阶段自动从上一个阶段的存档出发；parquet 第一次用时自动切词。
 
@@ -139,7 +84,7 @@ tinybrain serve           # 聊天网页：浏览器打开 http://127.0.0.1:8001
 - 显存不够：`--batch-size 8 --grad-accum 2`，等效的批大小不变；中断了加 `--resume` 接着跑。
 - 日志每行都有损失、梯度范数、速度和剩余时间；想看曲线用 `tinybrain tensorboard`（见「N 卡训练」一节）。
 - small 从预训练到评测按顺序怎么跑、要开几个终端，见[完整训一遍 small](#完整训一遍-small)；每个阶段的原理见[后训练](#后训练)。
-- 只想看整条链能不能跑：`tinybrain demo` 在一个 2300 万参数的小模型上把所有阶段跑一遍（M4 Max 上约 3.3 小时）。
+- 只想看整条链能不能跑：`tinybrain demo` 在一个 2300 万参数的小模型上把所有阶段跑一遍。
 - 没装成命令也没关系：`tinybrain pretrain` 就是 `python -m training.train_pretrain`，每个命令对应的模块见 `tools/cli.py`。
 
 **全部命令**（`tinybrain <命令> --help` 看全部参数）
@@ -170,7 +115,7 @@ tinybrain judge-check  检查评审模型打分靠不靠谱
 
 ## 完整训一遍 small
 
-快速开始只跑了预训练和 SFT。下面是 small 的整条链：预训练 → 退火 → SFT → 强化学习 → 评测，按一张 RTX 5070 Ti 16GB 写。
+下面是 small 的训练和评测流程：预训练 → 退火 → SFT → 强化学习 → 评测。将 `pretrain_mini.parquet`、`sft_small.parquet`、`rl_small.parquet` 和 `eval_tasks.parquet` 放到 `data/` 下，可从[致谢与资源](#致谢与资源)下载。
 
 **要开几个终端**
 
@@ -183,16 +128,13 @@ tinybrain judge-check  检查评审模型打分靠不靠谱
 **终端 1：主线**
 
 ```bash
-# 0. 下数据
-modelscope download --dataset caiwangzsnm/tinybrain-dataset pretrain_mini.parquet \
-    posttrain/sft_small.parquet posttrain/rl_small.parquet posttrain/eval_tasks.parquet --local_dir data
-mv data/posttrain/* data/
+# 0. 准备评测数据
 tinybrain benchmarks prepare      # 下载 C-Eval、CMMLU、GSM8K，只在本地评测用
 
-# 1. 预训练：mini 档 50 亿词 → out/small/pretrain                    5070 Ti 上约 20 小时
+# 1. 预训练：mini 档 50 亿词 → out/small/pretrain
 tinybrain pretrain --data data/pretrain_mini.parquet
 
-# 2. 退火 → out/small/anneal                                          约 2 小时
+# 2. 退火 → out/small/anneal
 #    先把 SFT 语料切成「整段都算损失」的对话数据，再用九成预训练数据 + 一成对话数据训 0.1 轮
 tinybrain prepare --chat --train-on all --input data/sft_small.parquet --out data/tokens/chat-all
 tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.parquet:0.9,data/tokens/chat-all:0.1 \
@@ -202,14 +144,15 @@ tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.p
 tinybrain sft
 
 # 4. 强化学习：agent RL + RLAIF，从 SFT 出发 → out/small/rl（先把终端 2 开起来）
-tinybrain rl --judge-url http://<评审机地址>:8080/v1 --judge-workers 1 --judge-timeout 600
+JUDGE_URL='http://127.0.0.1:8080/v1'  # 如果评审服务在另一台机器上，换成对应地址
+tinybrain rl --judge-url "$JUDGE_URL" --judge-workers 1 --judge-timeout 600
 
 # 5. 评测：留出题 + C-Eval、CMMLU、GSM8K
 tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceval cmmlu gsm8k \
-    --judge-url http://<评审机地址>:8080/v1 --judge-workers 1
+    --judge-url "$JUDGE_URL" --judge-workers 1
 ```
 
-第 3 到 5 步的时间还没在显卡上量过。每个阶段跑完都可以先看看效果：预训练和退火之后用 `tinybrain generate`，SFT 之后用 `tinybrain chat --demo`。
+每个阶段跑完都可以先看看效果：预训练和退火之后用 `tinybrain generate`，SFT 之后用 `tinybrain chat --demo`。
 
 **终端 2：评审模型**
 
@@ -226,7 +169,7 @@ tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceva
 
 **已经有预训练存档**
 
-跳过第 1 步，从第 2 步开始：把 `--init` 换成你的存档，`--data` 里的预训练数据换成你预训练时用的那份。`--epochs 0.1` 是按整份数据算的，base 档就是 20 亿词；嫌长可以改成 `--steps 10000`（每步 16 × 2048 词，共约 3.3 亿词，5070 Ti 上一个多小时）。
+跳过第 1 步，从第 2 步开始：把 `--init` 换成你的存档，`--data` 里的预训练数据换成你预训练时用的那份。`--epochs 0.1` 是按整份数据算的，base 档就是 20 亿词；嫌长可以改成 `--steps 10000`（每步 16 × 2048 词，共约 3.3 亿词）。
 
 ---
 
@@ -236,10 +179,6 @@ tinybrain eval out/small/rl/ckpt.pt --tasks data/eval_tasks.parquet --bench ceva
 tinybrain serve                                           # 用 out/small 里走得最远的存档
 tinybrain serve out/medium/pretrain/ckpt.pt --port 8001   # 指定存档；浏览器打开 http://127.0.0.1:8001/
 ```
-
-![聊天网页：2300 万参数演示模型的续写](docs/images/chat-demo.png)
-
-<sub>截图里是 2300 万参数的演示模型，只为展示页面；这个尺寸只会复读。</sub>
 
 - **续写**：写一个开头，模型接着往下写（黑字是你写的，蓝字是模型写的）。预训练、退火的存档还没学过对话，只能这样用，网页会默认打开续写，并在顶上说明。
 - **对话**：多轮对话，前面说过的话会一起发给模型。SFT 之后的存档默认打开对话。
@@ -278,7 +217,7 @@ training/              训练；每个阶段一个脚本，从头读到尾就是
   rewards/               判分：数学、代码（沙箱）、选择题、阅读、填空、指令跟随、逻辑题、诗词格律、评审模型、工具环境
 inference/             推理：分词器、对话格式、生成（CUDA 上走静态缓存 + CUDA graph）、命令行对话、OpenAI 兼容服务
 eval/                  评测：留出集损失、题目正确率、评审打分、C-Eval / CMMLU / GSM8K
-dataset/               数据流水线（tinybrain dataset）
+dataset/               数据构建流水线
   sources.py             所有来源一张表：出自哪里、许可证、怎么下载、怎么取正文
   download.py            下载原始数据
   clean.py               单篇文档的清洗规则（含切书）
@@ -320,7 +259,7 @@ out/                   训练输出（不进仓库）：out/<尺寸>/<阶段>/ �
 
 ### 多流残差（mHC）
 
-普通残差只有一条流：$`x \leftarrow x + F(x)`$。tinybrain 把残差拓宽成 $`n=4`$ 条流 $`X \in \mathbb{R}^{n \times d}`$，每个子层（注意力、前馈各算一个）有三组可学的系数：
+普通残差只有一条流：$`x \leftarrow x + F(x)`$。模型把残差拓宽成 $`n=4`$ 条流 $`X \in \mathbb{R}^{n \times d}`$，每个子层（注意力、前馈各算一个）有三组可学的系数：
 
 ```math
 X \leftarrow H^{\text{res}} X + h^{\text{post}} \otimes F\!\left(\textstyle\sum_{s} h^{\text{pre}}_s X_s\right)
@@ -407,7 +346,7 @@ y &= \text{FFN}_{\text{shared}}(x) \\
 
 可选 LatentMoE：先把输入压到更窄的宽度，路由和专家都在压缩后的空间里算，最后再升回来。代码：`lm/layers/moe.py`。
 
-**为什么这么配**（对照了 20 个公开 MoE 的配置）：2024 年以后的 MoE 激活比例几乎都在 12.5% 以下，和我们尺寸接近的小 MoE 用 32–64 个专家（Granite-1B 是 32 选 8、OLMoE 是 64 选 8）；专家宽度多是模型宽度的 0.25–0.5 倍；DeepSeek、Kimi、GLM、Moonlight 让第 1 层保持普通前馈、配一两个窄的共享专家（Qwen3、OLMoE、Granite 不用共享专家，这一点没有共识）。蚂蚁的效率杠杆论文给出的最优粒度 $`2d/w`$ 在 8–12，我们是 8。记忆表的大小也跟着 MoE 走：Engram 论文发现，每个词用不到的参数（没选中的专家 + 记忆表）里，记忆表占 20–25% 最好，large 取 25%。
+**为什么这么配**（对照了 20 个公开 MoE 的配置）：2024 年以后的 MoE 激活比例几乎都在 12.5% 以下，和 large 预设尺寸接近的小 MoE 用 32–64 个专家（Granite-1B 是 32 选 8、OLMoE 是 64 选 8）；专家宽度多是模型宽度的 0.25–0.5 倍；DeepSeek、Kimi、GLM、Moonlight 让第 1 层保持普通前馈、配一两个窄的共享专家（Qwen3、OLMoE、Granite 不用共享专家，这一点没有共识）。蚂蚁的效率杠杆论文给出的最优粒度 $`2d/w`$ 在 8–12，large 预设取 8。记忆表的大小也跟着 MoE 走：Engram 论文发现，每个词用不到的参数（没选中的专家 + 记忆表）里，记忆表占 20–25% 最好，large 取 25%。
 
 ### 其他细节
 
@@ -429,16 +368,10 @@ large 的前馈层：第 1 层普通前馈，其余各层 48 选 8 的四分之�
 
 ## 分词器
 
-`tokenizer/tokenizer.model`：SentencePiece BPE，**32768 词**，在按配比抽出的约 3500 万 token 样本上训练。
+`tokenizer/tokenizer.model`：SentencePiece BPE，**32768 词**。
 
 - 不做任何归一化，字节兜底，数字逐位拆开，字符覆盖率 0.99995，**解码和原文一字不差**；
 - 0–3 是未知、开头、结束、填充，另留 8 个控制符：`<|im_start|>`、`<|im_end|>` 给对话格式，两个给工具调用，其余备用。
-
-在留出文档上一个词平均几个字（越大越省）：
-
-| 中文文章 | 百科 | 古文 | 代码 | 数学 | 论文 | 英文网页 | 合计 |
-|---|---|---|---|---|---|---|---|
-| 1.70 | 2.16 | 1.11 | 2.84 | 3.09 | 3.40 | 4.16 | 2.38 |
 
 ```bash
 tinybrain tokenizer sample --tokens 40000000      # 重新抽样本
@@ -448,18 +381,9 @@ tinybrain tokenizer eval tokenizer/tokenizer.model
 
 ---
 
-## 数据集：tinybrain dataset
+## 数据集
 
-一份以中文为主的混合预训练集，分四档，大档包含小档（nano ⊂ mini ⊂ base ⊂ full）。token 数是用上面的分词器实测的。
-
-| 档 | 真实 token | 篇数 | 文件大小 | 适合 |
-|---|---|---|---|---|
-| nano | 0.99B | 54 万 | 2.1 GB | 跑通流程、做小实验 |
-| mini | 4.96B | 348 万 | 10.3 GB | small（167M） |
-| base | 20.19B | 1319 万 | 40.6 GB | medium（499M） |
-| full | 60.26B | 4298 万 | 117 GB | large（1.18B） |
-
-每个文件都是完整的一档、内部打乱：要 mini 就只读 `pretrain_mini.parquet`。列：`text`、`source`、`category`、`license`、`quality`、`est_tokens`。
+数据构建流程生成以中文为主的混合预训练集，分为 nano、mini、base 和 full 四档（nano ⊂ mini ⊂ base ⊂ full）。每个 Parquet 文件是一档，例如 `pretrain_mini.parquet`，包含 `text`、`source`、`category`、`license`、`quality`、`est_tokens` 列。
 
 ### 配比
 
@@ -483,9 +407,9 @@ nano、mini、base 严格按下面的配比挑（按真实 token 算）；full �
 ### 怎么做的
 
 1. **清洗**（`dataset/clean.py`、`dataset/pretrain.py`）：修乱码，统一标点和空白，繁体转简体；去掉太短、不成句、语言不对、广告、重复太多、有屏蔽字的文档；手机号、身份证号、邮箱换成占位符；书和古籍按章节切成篇；维基去掉表格、模板残留和「参考文献」之后的部分。每篇算一个质量分（来源自带的分数，或者按语言、重复、成句、广告、长度、用字丰富度算的启发式分数）。法院裁判文书因为含有当事人的姓名、出生日期和住址，没有放进来。
-2. **跨来源去重**（`dataset/mix.py index`）：每篇取最长的 3 句当指纹；一篇文档如果有 2 句（指纹不足两个的，全部指纹）在优先级更高的文档里出现过，就算重复。只撞一句不算——一条常见的法律条文会出现在很多不同的文章里。优先级是整理过的来源（法律、诗词、古籍、维基……）在前，网页抓取的在后。去重去掉了约四分之一。
+2. **跨来源去重**（`dataset/mix.py index`）：每篇取最长的 3 句当指纹；一篇文档如果有 2 句（指纹不足两个的，全部指纹）在优先级更高的文档里出现过，就算重复。只撞一句不算——一条常见的法律条文会出现在很多不同的文章里。优先级是整理过的来源（法律、诗词、古籍、维基……）在前，网页抓取的在后。
 3. **分档**（`mix.py plan`、`write`）：按配比算出每个来源每档取多少；来源内部按质量分从高到低取，最好的进 nano，往下依次进 mini、base。所以**越小的档单篇质量越高**，大档的价值在量。
-4. **检查**（`mix.py verify`）：每个来源的 token 数和计划一致；文件内部没有重复（允许十万分之一以内：句子太短、取不出指纹的残篇会漏下，base 和 full 里有 41 篇）；小档完整包含在大档里；顺序是打乱的。
+4. **检查**（`mix.py verify`）：每个来源的 token 数和计划一致；文件内部没有重复（句子太短时可能无法提取指纹）；小档完整包含在大档里；顺序是打乱的。
 
 ### 许可
 
@@ -527,7 +451,7 @@ $`m`$ 超过约 16.6（FP32；BF16 约 5.5）时，$`p_t`$ 舍入成 1，正确�
 \ell = \mathrm{softplus}(-m),\qquad \frac{\partial \ell}{\partial z_t} = -\sigma(-m)
 ```
 
-$`m`$ 用 $`-\mathrm{LSE}_{j\neq t}(z_j - z_t)`$ 来算，其余词全是 $`-\infty`$ 时先截到 $`-10^4`$（v3 勘误里的 NaN）。CPU/MPS 的分块损失、要整张输出时的损失、强化学习里的对数概率都走这条路；CUDA 上的 Liger 融合内核还是标准写法。论文还给出：用 Adam 加权重衰减时，间隔会停在 $`\ln(1/\varepsilon)`$ 附近。我们的默认 $`\varepsilon = 10^{-10}`$ 对应约 23，已经越过 FP32 的临界值，所以验证时日志里多一列 `saturated`（第一行里间隔超过临界值的词占比，屏幕上显示为「塌缩」）。它在 CUDA 上明显不是 0 时，可以加 `--adam-eps 1e-7`（对应约 16.1）。
+$`m`$ 用 $`-\mathrm{LSE}_{j\neq t}(z_j - z_t)`$ 来算，其余词全是 $`-\infty`$ 时先截到 $`-10^4`$（v3 勘误里的 NaN）。CPU/MPS 的分块损失、要整张输出时的损失、强化学习里的对数概率都走这条路；CUDA 上的 Liger 融合内核还是标准写法。论文还给出：用 Adam 加权重衰减时，间隔会停在 $`\ln(1/\varepsilon)`$ 附近。默认 $`\varepsilon = 10^{-10}`$ 对应约 23，已经越过 FP32 的临界值，所以验证时日志里多一列 `saturated`（第一行里间隔超过临界值的词占比，屏幕上显示为「塌缩」）。它在 CUDA 上明显不是 0 时，可以加 `--adam-eps 1e-7`（对应约 16.1）。
 
 ### 按轮数训
 
@@ -572,7 +496,7 @@ X &\leftarrow aX + (bA + cA^2)\,X, \\
 | 记忆表（不做权重衰减） | 0.3 | `--engram-lr` |
 | 归一化系数、多流残差系数、流入口出口的查询 | 0.01 | `--scalar-lr` |
 
-这些都是起步值，还没在我们的数据上调过。Muon 管的矩阵另外带解耦的权重衰减，默认 0.1（`--weight-decay`）：每步先乘 1 − 学习率 × 0.1 再加更新；退火分支沿用主线存档里的值。
+Muon 管的矩阵另外带解耦的权重衰减，默认 0.1（`--weight-decay`）：每步先乘 1 − 学习率 × 0.1 再加更新；退火分支沿用主线存档里的值。
 
 ### 学习率曲线
 
@@ -627,7 +551,7 @@ medium/large ：预训练(base / full) → 退火 → SFT → 领域专家（数
 每档都能单独跑通，不依赖别的尺寸。完整的设计和取舍见 [docs/post-training.md](docs/post-training.md)。
 
 ```bash
-tinybrain data sft rl       # 后训练数据：SFT 语料、RL 题目、评测题、MOPD 提示（也可以从 ModelScope 的 posttrain/ 下载）
+tinybrain data sft rl       # 后训练数据：SFT 语料、RL 题目、评测题、MOPD 提示
 ```
 
 各阶段都写到同一个运行目录（默认 `out/small`，换尺寸用 `--run out/medium`），不写 `--init` 时自动从上一个阶段的存档出发：
@@ -696,7 +620,7 @@ tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.p
 
 `--merge-init`：开始前先做任务算术，把学生换成 $`\theta \leftarrow \theta + \frac{1}{K}\sum_k (\theta_k - \theta)`$（各专家相对 SFT 模型的改动取平均）。
 
-### RL：从 PPO 到 GRPO，再到我们的写法
+### RL：从 PPO 到 GRPO
 
 **PPO** 的策略损失（每个位置 $`t`$）：
 
@@ -723,7 +647,7 @@ A_i = \frac{r_i - \mathrm{mean}(r_1, \dots, r_G)}{\mathrm{std}(r_1, \dots, r_G)}
 
 **Dr. GRPO** 指出这两处会带偏：除以标准差，会让「几乎全对或全错」的简单题、难题权重过大；按长度平均，会让答错的长回答每个词受的惩罚变小，模型于是越答越长。改法是**不除标准差、用一个常数代替长度**。
 
-**tinybrain 的写法**（`training/train_rl.py`）：在 Dr. GRPO 的基础上，每批回答**只更新一次**（完全在线）。这时 $`\theta = \theta_{\text{old}}`$，$`\rho_t = 1`$，clip 不起作用，min 里两项一样，PPO 的梯度正好退化成带组内基线的策略梯度。所以损失直接写成：
+**RL 的实现**（`training/train_rl.py`）：在 Dr. GRPO 的基础上，每批回答**只更新一次**（完全在线）。这时 $`\theta = \theta_{\text{old}}`$，$`\rho_t = 1`$，clip 不起作用，min 里两项一样，PPO 的梯度正好退化成带组内基线的策略梯度。所以损失直接写成：
 
 ```math
 \begin{aligned}
@@ -761,8 +685,6 @@ RLVR、agent RL、RLAIF 用的是同一个训练器，区别只在题目和奖�
 
 ## N 卡训练：加速、Windows、监控
 
-在 RTX 5070 Ti 16GB 上验证过：small、2048 × 16，约 7 万 token/秒（0.46–0.47 秒一步），进程专用显存峰值约 12.5 GiB。CPU 和 MPS 上走普通的 PyTorch 实现，结果一样（有测试对照）。
-
 CUDA 训练加速使用 **Liger Kernel 0.8.5+**（融合输出层交叉熵、静态 mHC 读写、RMSNorm、RoPE、ReLU²）和 **PyTorch FlexAttention**（原生 GQA、滑动窗口）。Linux 可安装 `pip install -e ".[data,cuda]"`；Windows 先准备匹配 PyTorch 的 `triton-windows`，再安装 `pip install --no-deps liger-kernel==0.8.5`，避免 pip 拉取不支持 Windows 的标准 Triton 包。CPU 保留普通 PyTorch 实现。
 
 `tinybrain bench small --batch 16 --seq 2048` 测完整的前向、反向和优化器更新；CUDA 默认使用选择性激活重计算，可用 `--checkpoint-policy full` 改为整层重算，或 `--no-checkpoint` 关闭重算。主干逐层编译，Engram 查表、流入口、出口和 Sinkhorn 也参与编译。mHC 使用 Liger 原有内核直接写入输入精度的缓冲区，减少 FP32 临时张量；内核内仍用 FP32 计算。预训练和 SFT 使用同一套融合损失与加速算子。
@@ -771,7 +693,7 @@ CUDA 训练加速使用 **Liger Kernel 0.8.5+**（融合输出层交叉熵、静
 
 CUDA 训练时把 Q、K、V 投影合并成一次矩阵乘法，参数和检查点中仍分别保存三组权重。验证和带缓存的生成保留原来的投影路径。
 
-medium 在 16GB 显卡上用微批 4、梯度累积 4，完整一步仍处理 16 × 2048 = 32,768 个词，实测约 2.59 万 token/秒（1.26 秒一步），专用显存峰值约 12.4 GiB。可以装 `pip install -e ".[cudnn]"`（`nvidia-cudnn-frontend>=1.32.3,<1.33`，要 PyTorch 2.13+），用 `--attention-backend cudnn` 换成 NVIDIA 原生的滑动窗口/GQA 前向和反向；默认仍是 FlexAttention。编译路径还把 mHC 读流和 RMSNorm 融在一起，并让 FFN 的矩阵乘法和 ReLU² 一起搜索融合方式；模型结构、词表和优化器状态的精度不变。`--gpu-memory-fraction` 在建模型之前给 PyTorch 设显存上限。验证的抽样批大小（`--eval-batch-size`）和实际前向的微批（`--eval-micro-batch-size`）分开指定：换了训练微批，验证片段仍和以前一样，历史损失可以直接比。
+可以装 `pip install -e ".[cudnn]"`（`nvidia-cudnn-frontend>=1.32.3,<1.33`，要 PyTorch 2.13+），用 `--attention-backend cudnn` 换成 NVIDIA 原生的滑动窗口/GQA 前向和反向；默认仍是 FlexAttention。编译路径还把 mHC 读流和 RMSNorm 融在一起，并让 FFN 的矩阵乘法和 ReLU² 一起搜索融合方式；模型结构、词表和优化器状态的精度不变。`--gpu-memory-fraction` 在建模型之前给 PyTorch 设显存上限。验证的抽样批大小（`--eval-batch-size`）和实际前向的微批（`--eval-micro-batch-size`）分开指定：换了训练微批，验证片段仍和以前一样，历史损失可以直接比。
 
 ```bash
 tinybrain pretrain --data data/tokens/base --out out/medium/pretrain --preset medium --seq-len 2048 --batch-size 4 --grad-accum 4 --epochs 1 --autotune --attention-backend cudnn --gpu-memory-fraction 0.85 --checkpoint-policy selective --eval-batch-size 16 --eval-micro-batch-size 4 --log-every 50
@@ -786,7 +708,7 @@ torchrun --standalone --nproc-per-node 8 -m training.train_pretrain --preset med
 ```
 
 - 每个参数归一张卡管（按大小贪心地分）：梯度只汇总到管它的卡上，这张卡用 Muon 或 Adam 更新它，再把新参数广播给其他卡。优化器状态（Adam 的两个矩、Muon 的动量）每张卡只存自己那份，约为单卡的 1/卡数；通信量和普通的数据并行一样。
-- 第几步、第几个微批、第几张卡取哪些片段只由种子和序号决定，合起来正好是单卡同一步取的那些。所以每步的片段数一样时，多卡和单卡训出来的是同一个模型（有测试对照，只差浮点加法的顺序），存档也能在单卡和多卡之间互相 `--resume`。比如 5070 Ti 上用 `--batch-size 4 --grad-accum 4` 训到一半的 medium，换到 8 张卡上用 `--batch-size 2 --grad-accum 1` 接着训。每步的片段数和存档不一样时，`--resume` 会拒绝。
+- 第几步、第几个微批、第几张卡取哪些片段只由种子和序号决定，合起来正好是单卡同一步取的那些。所以每步的片段数一样时，多卡和单卡训出来的是同一个模型（有测试对照，只差浮点加法的顺序），存档也能在单卡和多卡之间互相 `--resume`。比如单卡用 `--batch-size 4 --grad-accum 4` 训到一半的 medium，换到 8 张卡上用 `--batch-size 2 --grad-accum 1` 接着训。每步的片段数和存档不一样时，`--resume` 会拒绝。
 - 第一次给 parquet 时只有 0 号卡切词，其他卡等它切完。只有 0 号卡打印、写日志和存档；验证的几批分给各卡算。
 - MoE 的路由偏置按各卡负载的平均来调。多卡时不能用 `--cuda-graph`、`--offload-adam`。
 - 现在只有预训练（含退火）支持多卡，SFT、蒸馏、RL 还是单卡。
@@ -849,7 +771,7 @@ from inference import ChatFormat, Tokenizer
 from inference.chat import reply
 from training.trainer_utils import load_model, pick_device
 
-path = "tinybrain-medium"                                    # 下载下来的目录
+path = "out/models/small-chat"                              # 模型目录
 model = load_model(path, pick_device("auto")).eval()         # 读 safetensors，并核对校验和
 fmt = ChatFormat(Tokenizer(f"{path}/tokenizer.model"))
 messages = [{"role": "user", "content": "用一段话解释什么是机器学习。"}]
@@ -867,44 +789,9 @@ tinybrain export --checkpoint out/medium/rl/ckpt.pt --out release/my-medium --st
 
 ---
 
-## 演示结果
-
-2300 万参数的演示模型（宽 256 × 4 层），用 nano 开头的 9000 万词预训练 1 轮，再用完整的后训练数据把每个阶段都跑一遍（M4 Max 上共 198 分钟）。**这一步只为确认整条链衔接无误，分数不代表能力**：这个尺寸只会复读（问「你好，请介绍一下你自己」，答「你好，你好，你好……」），选择题在随机水平附近（四选一随机是 25%，每个基准只评了 100 题）。
-
-| 阶段 | 留出集损失 | C-Eval | CMMLU | GSM8K |
-|---|---|---|---|---|
-| 预训练 | 4.073 | 31% | 34% | 0% |
-| 退火 | 4.057 | 27% | 36% | 0% |
-| SFT | 4.206 | 24% | 25% | 1% |
-| 工具调用 RL | 4.208 | 26% | 22% | 0% |
-| 数学专家 | 4.445 | 25% | 26% | 1% |
-| 代码专家 | 4.526 | 27% | 34% | 0% |
-| MOPD | 4.207 | 25% | 24% | 0% |
-| MOPD + 评审 RL | 4.207 | 26% | 28% | 1% |
-
-能看出来的只是机制在起作用：退火后损失再降一点；两个专家在通用留出集上损失明显升高（往自己的领域偏了）；MOPD 把学生拉回 SFT 的水平，同时吸收了专家。
-
----
-
-## 还没做的
-
-- 完成 Small 和 Medium 的独立终评，覆盖多轮对话、算术和指令遵循。Large 尚未训练。
-- 评分细则和人工打分对比校准；
-- 古文、诗词的专门评测；MMLU、MATH-500、HumanEval、MBPP、IFEval 这些基准；
-- large 接小米开源的 MiMo agent 环境（通过 `inference/serve.py` 的 OpenAI 兼容接口）；
-- 诗词格律换成平水韵的字表。
-
----
-
-## 联系与赞助
-
-训练用的算力是我自己出钱租的。如果你愿意赞助算力，或者想合作，欢迎写信到 [3995756625@qq.com](mailto:3995756625@qq.com)；赞助方会写进 README 和之后的视频。提问和反馈请直接开 [issue](https://github.com/logitcai/tinybrain/issues)。
-
 ## 许可证
 
 代码以 [MIT 许可证](LICENSE) 发布。数据集没有统一的许可证，每篇文档按所属来源的许可证，见[许可](#许可)。
-
-**发布的权重**：训练数据里有 OpenCSG 的 Fineweb-Edu-Chinese（预训练、退火）和 smoltalk-chinese（SFT、退火）。OpenCSG 的数据卡要求，用这些数据训练的模型用在商业场景之前，要先向 OpenCSG 申请许可。所以权重可以拿来研究、学习、自己玩；要商用，请先联系 OpenCSG。另外，SFT 里有一部分回答是 GPT、DeepSeek、Qwen 等模型生成的，每个来源见 `dataset/sources.py`。
 
 ---
 
@@ -919,3 +806,29 @@ tinybrain export --checkpoint out/medium/rl/ckpt.pt --out release/my-medium --st
 - MOPD: Multi-Teacher On-Policy Distillation — https://arxiv.org/abs/2606.30406 ；CA-MOPD — https://arxiv.org/abs/2610.26950
 - reasoning-gym — https://github.com/open-thought/reasoning-gym
 - 数据集的每个来源见 `dataset/sources.py`
+
+## 致谢与资源
+
+TinyGo 基于 [logitcai/tinybrain](https://github.com/logitcai/tinybrain)。感谢原作者和贡献者公开代码、数据集和模型。
+
+- [预训练和后训练数据集（ModelScope）](https://www.modelscope.cn/datasets/caiwangzsnm/tinybrain-dataset)
+- [Small Chat RC1 权重（ModelScope）](https://www.modelscope.cn/models/caiwangzsnm/TinyBrain-Small-Chat-20261119-RC1)
+- [Medium Chat RC1 权重（ModelScope）](https://www.modelscope.cn/models/caiwangzsnm/TinyBrain-Medium-Chat-20261119-RC1)
+
+**下载模型（Download weights）**
+
+```bash
+pip install modelscope
+modelscope download --model caiwangzsnm/TinyBrain-Small-Chat-20261119-RC1 --local_dir out/models/small-chat
+```
+
+**下载训练数据（Download training data）**
+
+```bash
+modelscope download --dataset caiwangzsnm/tinybrain-dataset pretrain_nano.parquet posttrain/sft_small.parquet --local_dir data
+mv data/posttrain/sft_small.parquet data/
+```
+
+先安装 `modelscope`，再执行数据下载命令。跑完整的 small 流程时，将 `pretrain_nano.parquet` 换成 `pretrain_mini.parquet`，另外下载 `posttrain/rl_small.parquet` 和 `posttrain/eval_tasks.parquet`，并把后训练文件放到 `data/` 下。
+
+这些权重的训练使用了 OpenCSG 的 Fineweb-Edu-Chinese 和 smoltalk-chinese。根据数据卡，商用前需向 OpenCSG 申请许可。
