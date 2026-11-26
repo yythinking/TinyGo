@@ -333,7 +333,10 @@ X \leftarrow H^{\text{res}} X + h^{\text{post}} \otimes F\!\left(\textstyle\sum_
 双随机用 Sinkhorn 迭代得到：对 $`\exp(\text{logits})`$ 交替按列、按行归一，在对数域里做 20 次：
 
 ```math
-\log M \leftarrow \log M - \mathrm{logsumexp}_{\text{行}}(\log M),\qquad \log M \leftarrow \log M - \mathrm{logsumexp}_{\text{列}}(\log M)
+\begin{aligned}
+\log M &\leftarrow \log M - \mathrm{logsumexp}_{\text{行}}(\log M), \\
+\log M &\leftarrow \log M - \mathrm{logsumexp}_{\text{列}}(\log M).
+\end{aligned}
 ```
 
 这里用的是**静态**版：系数不看输入，整个模型所有子层的系数放在一起一次算完，几乎不花时间。初始化让它等价于普通残差（$`H^{\text{res}} \approx I`$，第 $`s`$ 个子层主要读第 $`s \bmod n`$ 条流）。代码：`lm/layers/hyper.py`。
@@ -343,7 +346,11 @@ X \leftarrow H^{\text{res}} X + h^{\text{post}} \otimes F\!\left(\textstyle\sum_
 很多知识是「看到这几个字就该想起什么」，用矩阵乘去算有点浪费。Engram 直接按「前 $`n-1`$ 个词 + 当前词」查表：对阶数 $`n \in \{2, 3\}`$、每个哈希头 $`h`$（8 个），
 
 ```math
-\text{row}_{n,h}(p) = \Big(\bigoplus_{j=0}^{n-1} t_{p-j}\cdot m_{n,h,j}\Big) \bmod P_{n,h} + \text{offset}_{n,h}
+\begin{aligned}
+\text{row}_{n,h}(p)
+  &= \Big(\bigoplus_{j=0}^{n-1} t_{p-j}\cdot m_{n,h,j}\Big) \\
+  &\quad \bmod P_{n,h} + \text{offset}_{n,h}.
+\end{aligned}
 ```
 
 $`t_{p-j}`$ 是往前第 $`j`$ 个词的编号，$`m`$ 是固定的随机奇数乘数，$`\oplus`$ 是按位异或，$`P_{n,h}`$ 是互不相同的质数（不同哈希头的碰撞不会成对出现）。每个位置取回 $`2 \times 8`$ 行、每行宽 32（small）的向量，拼起来、归一化。
@@ -351,10 +358,13 @@ $`t_{p-j}`$ 是往前第 $`j`$ 个词的编号，$`m`$ 是固定的随机奇数�
 取回的记忆用两次：
 
 1. **入口**：每个阶数投影成一份 $`d`$ 维的「来源」，和词向量一起交给流入口；
-2. **门控注入**：在第 1 层（medium、large 再加中间一层）之前，每条流拿自己当前的状态和记忆的「键」比一比，决定收多少：
+2. **门控注入**：在第 1 层（medium、large 再加中间一层）之前，每条流拿自己当前的状态和记忆的「键」比一比，决定收多少。令 $`R = \mathrm{RMSNorm}`$：
 
 ```math
-g_s = \sigma\!\left(\frac{\langle \text{RMSNorm}(X_s),\ \text{RMSNorm}(K_s\,e)\rangle}{\sqrt{d}}\right),\qquad X_s \leftarrow X_s + g_s \cdot V e
+\begin{gathered}
+g_s = \sigma\!\left(\frac{\langle R(X_s),\ R(K_s\,e)\rangle}{\sqrt{d}}\right), \\
+X_s \leftarrow X_s + g_s \cdot V e.
+\end{gathered}
 ```
 
 记忆表查一次只取十几行，**不花算力，只占显存**。所以记忆表都做得很大：small、medium 占「主干 + 记忆表」参数的 45%（`ENGRAM_SHARE`）；large 是 MoE，按 Engram 论文的最优点，占「每个词用不到的参数」的 25%（`ENGRAM_SPARSE_SHARE`）。代码：`lm/layers/engram.py`。
@@ -382,7 +392,13 @@ g_s = \sigma\!\left(\frac{\langle \text{RMSNorm}(X_s),\ \text{RMSNorm}(K_s\,e)\r
 large 档换成混合专家：第 1 层仍是普通前馈；其余各层是 2 个**共享专家**（和路由专家同宽，合起来就是一个半宽的前馈层），加上从 48 个四分之一宽的路由专家里选 8 个。按宽度算，每个词用到全部专家的 20%：
 
 ```math
-s = \sqrt{\mathrm{softplus}(W_r z)},\qquad \mathcal{K} = \mathrm{top\text{-}k}(s + b),\qquad y = \text{FFN}_{\text{shared}}(x) + \sum_{e \in \mathcal{K}} \frac{s_e}{\sum_{e' \in \mathcal{K}} s_{e'}}\,\text{FFN}_e(z)
+\begin{aligned}
+s &= \sqrt{\mathrm{softplus}(W_r z)}, \\
+\mathcal{K} &= \mathrm{top\text{-}k}(s + b), \\
+y &= \text{FFN}_{\text{shared}}(x) \\
+  &\quad + \sum_{e \in \mathcal{K}}
+     \frac{s_e}{\sum_{e' \in \mathcal{K}} s_{e'}}\,\text{FFN}_e(z).
+\end{aligned}
 ```
 
 负载均衡有两层：
@@ -522,7 +538,11 @@ $`m`$ 用 $`-\mathrm{LSE}_{j\neq t}(z_j - z_t)`$ 来算，其余词全是 $`-\in
 **Muon**（`training/muon.py`）管所有矩阵（注意力、前馈、专家、各种投影）。思路是：先做动量，再把更新量「正交化」——让它的奇异值都接近 1，这样每个方向走的步子一样大，不会被少数几个大方向主导：
 
 ```math
-B \leftarrow \mu B + (1-\mu) G,\qquad U = (1-\mu) G + \mu B\ \ (\text{Nesterov}),\qquad O = \mathrm{NS}_5(U)
+\begin{aligned}
+B &\leftarrow \mu B + (1-\mu) G, \\
+U &= (1-\mu) G + \mu B \quad (\text{Nesterov}), \\
+O &= \mathrm{NS}_5(U).
+\end{aligned}
 ```
 
 ```math
@@ -532,7 +552,12 @@ W \leftarrow (1 - \eta\lambda)\,W - \eta \sqrt{\max(1,\ m/n)}\; O
 $`\mathrm{NS}_5`$ 是 5 次 Newton–Schulz 迭代，不用做 SVD：
 
 ```math
-X_0 = U / \lVert U \rVert,\qquad A = X X^\top,\qquad X \leftarrow aX + (bA + cA^2)\,X,\qquad (a, b, c) = (3.4445,\ -4.7750,\ 2.0315)
+\begin{aligned}
+X_0 &= U / \lVert U \rVert, \\
+A &= X X^\top, \\
+X &\leftarrow aX + (bA + cA^2)\,X, \\
+(a, b, c) &= (3.4445,\ -4.7750,\ 2.0315).
+\end{aligned}
 ```
 
 形状相同的矩阵叠在一起一次算完；CUDA 上用 bf16 算正交化。`--optimizer native` 换成 PyTorch 自带的 `torch.optim.Muon`（两条路径的更新结果几乎一样，有测试对照）。
@@ -554,15 +579,30 @@ X_0 = U / \lVert U \rVert,\qquad A = X X^\top,\qquad X \leftarrow aX + (bA + cA^
 先线性预热，再按余弦降到起步值的 $`f`$ 倍（`--final-lr-frac`，预训练默认 0.1）：
 
 ```math
-\text{scale}(t) = \begin{cases} \dfrac{t+1}{T_w} & t < T_w \\[2mm] f + (1-f)\cdot\dfrac{1 + \cos(\pi p)}{2},\quad p = \dfrac{t - T_w}{T - T_w} & t \ge T_w \end{cases}
+\begin{gathered}
+s(t) =
+\begin{cases}
+\dfrac{t+1}{T_w} & t < T_w, \\[2mm]
+f + (1-f)\cdot\dfrac{1 + \cos(\pi p)}{2} & t \ge T_w,
+\end{cases} \\[2mm]
+p = \dfrac{t - T_w}{T - T_w}.
+\end{gathered}
 ```
 
-每组的学习率 = 起步值 × scale(t) × `--lr-mult`。
+每组的学习率 = 起步值 × $`s(t)`$ × `--lr-mult`。
 
 `--schedule wsd` 换成 WSD（预热、恒定、退火）：预热之后一直保持 1，最后 $`T_d`$ 步（`--decay-frac`，默认 0.2）按 $`1-\sqrt{p}`$ 降到 $`f`$：
 
 ```math
-\text{scale}(t) = \begin{cases} \dfrac{t+1}{T_w} & t < T_w \\[2mm] 1 & T_w \le t < T - T_d \\[2mm] 1 - (1-f)\sqrt{p},\quad p = \dfrac{t - (T - T_d) + 1}{T_d} & t \ge T - T_d \end{cases}
+\begin{gathered}
+s(t) =
+\begin{cases}
+\dfrac{t+1}{T_w} & t < T_w, \\[2mm]
+1 & T_w \le t < T - T_d, \\[2mm]
+1 - (1-f)\sqrt{p} & t \ge T - T_d,
+\end{cases} \\[2mm]
+p = \dfrac{t - (T - T_d) + 1}{T_d}.
+\end{gathered}
 ```
 
 余弦要在开始时定死总步数；WSD 的恒定段里，任何一个存档都能分出一支单独退火，主线接着训。这样训到一半就能拿到一个退过火、能用的模型，再决定要不要训满。短退火能达到和余弦相当的效果，见 Hägele 等 2024，*Scaling Laws and Compute-Optimal Training Beyond Fixed Training Durations*。
@@ -639,7 +679,13 @@ tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.p
 把几个专家的本事合回一个通用模型。做法是让**学生自己生成回答**，再让对应领域的专家逐位置给出它的概率分布，最小化学生对老师的**反向 KL**：
 
 ```math
-\mathcal{L}_{\text{MOPD}} = \frac{1}{\sum_i |y_i|}\sum_i \sum_{t \in y_i} \sum_{v \in V} \pi_\theta(v \mid h_{i,t}) \Big[\log \pi_\theta(v \mid h_{i,t}) - \log \pi_{T(d_i)}(v \mid h_{i,t})\Big]
+\begin{aligned}
+\mathcal{L}_{\text{MOPD}}
+  &= \frac{1}{\sum_i |y_i|} \sum_i \sum_{t \in y_i} \sum_{v \in V} \\
+  &\quad \pi_\theta(v \mid h_{i,t})
+     \Big[\log \pi_\theta(v \mid h_{i,t}) \\
+  &\qquad - \log \pi_{T(d_i)}(v \mid h_{i,t})\Big].
+\end{aligned}
 ```
 
 - $`y_i \sim \pi_\theta`$ 是学生自己写的回答，$`h_{i,t}`$ 是提示加上回答的前 $`t`$ 个词；
@@ -655,7 +701,12 @@ tinybrain pretrain --init out/small/pretrain/ckpt.pt --data data/pretrain_mini.p
 **PPO** 的策略损失（每个位置 $`t`$）：
 
 ```math
-\mathcal{L}^{\text{PPO}} = -\mathbb{E}_t\Big[\min\big(\rho_t A_t,\ \mathrm{clip}(\rho_t,\,1-\epsilon,\,1+\epsilon)\,A_t\big)\Big],\qquad \rho_t = \frac{\pi_\theta(y_t \mid h_t)}{\pi_{\theta_{\text{old}}}(y_t \mid h_t)}
+\begin{aligned}
+\mathcal{L}^{\text{PPO}} &= -\mathbb{E}_t\Big[\min\big(\rho_t A_t, \\
+  &\quad \mathrm{clip}(\rho_t,\,1-\epsilon,\,1+\epsilon)\,A_t\big)\Big], \\
+\rho_t &= \frac{\pi_\theta(y_t \mid h_t)}
+              {\pi_{\theta_{\text{old}}}(y_t \mid h_t)}.
+\end{aligned}
 ```
 
 - $`\rho_t`$ 是新旧策略的概率比：同一批回答要用来更新好几次，更新后的策略和采样时的不一样了，所以要按比例修正；
@@ -675,7 +726,12 @@ A_i = \frac{r_i - \mathrm{mean}(r_1, \dots, r_G)}{\mathrm{std}(r_1, \dots, r_G)}
 **tinybrain 的写法**（`training/train_rl.py`）：在 Dr. GRPO 的基础上，每批回答**只更新一次**（完全在线）。这时 $`\theta = \theta_{\text{old}}`$，$`\rho_t = 1`$，clip 不起作用，min 里两项一样，PPO 的梯度正好退化成带组内基线的策略梯度。所以损失直接写成：
 
 ```math
-\mathcal{L}_{\text{RL}} = -\frac{1}{N \cdot L_{\max}} \sum_{i=1}^{N} A_i \sum_{t \in y_i} \log \pi_\theta(y_{i,t} \mid h_{i,t}),\qquad A_i = r_i - \frac{1}{G}\sum_{j \in \text{组}(i)} r_j
+\begin{aligned}
+\mathcal{L}_{\text{RL}}
+  &= -\frac{1}{N \cdot L_{\max}} \sum_{i=1}^{N} A_i \\
+  &\qquad \times \sum_{t \in y_i} \log \pi_\theta(y_{i,t} \mid h_{i,t}), \\
+A_i &= r_i - \frac{1}{G}\sum_{j \in \text{组}(i)} r_j.
+\end{aligned}
 ```
 
 $`N`$ 是这一步的回答总数（每步题数 × 每题回答数），$`L_{\max}`$ 是回答长度上限（`--max-new`），两个都是常数。整组奖励一样的题优势全是 0，不贡献梯度。agent 题里工具返回的内容不是模型写的，遮掉不算。没有价值模型，也没有参考模型的 KL 惩罚。
