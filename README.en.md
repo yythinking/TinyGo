@@ -24,7 +24,7 @@ pip install -e ".[artifact]"
 
 ### Local chat
 
-Download the Small Chat weights from [the resource index](README.md#致谢与资源), then start a terminal chat or a web server:
+Download the Small Chat weights from [the resource index](README.md#来源与致谢), then start a terminal chat or a web server:
 
 ```bash
 tinybrain chat out/models/small-chat
@@ -37,7 +37,7 @@ The `chat`, `serve`, `generate`, and `eval` commands accept a model directory an
 
 ### Train from scratch
 
-Place `pretrain_nano.parquet` and `sft_small.parquet` under `data/`. Download them from [the resource index](README.md#致谢与资源) or build the data with `tinybrain data` (`tinybrain data --check` lists the required inputs).
+Place `pretrain_nano.parquet` and `sft_small.parquet` under `data/`. Download them from [the resource index](README.md#来源与致谢) or build the data with `tinybrain data` (`tinybrain data --check` lists the required inputs).
 
 ```bash
 pip install -e ".[data]"
@@ -54,7 +54,7 @@ Each stage writes to `out/<preset>/<stage>/` and starts from the previous stage'
 
 ### Full small pipeline
 
-Pretraining → annealing → SFT → RL → evaluation. Place `pretrain_mini.parquet`, `sft_small.parquet`, `rl_small.parquet`, and `eval_tasks.parquet` under `data/` (see [the resource index](README.md#致谢与资源)). The judge model can run in a separate terminal or on another machine.
+Pretraining → annealing → SFT → RL → evaluation. Place `pretrain_mini.parquet`, `sft_small.parquet`, `rl_small.parquet`, and `eval_tasks.parquet` under `data/` (see [the resource index](README.md#来源与致谢)). The judge model can run in a separate terminal or on another machine.
 
 ```bash
 # Terminal 1
@@ -141,6 +141,6 @@ Details: [docs/post-training.md](docs/post-training.md) (Chinese).
 
 Code: [MIT](LICENSE). Each dataset document carries its source's license. See [dataset/sources.py](dataset/sources.py) for the source list. C-Eval and CMMLU are non-commercial benchmarks downloaded locally for evaluation.
 
-## References
+## Sources and credits
 
-nanochat, MiniMind, Hyper-Connections (ByteDance), mHC (DeepSeek), Engram (DeepSeek), Muon (Keller Jordan), GRPO (DeepSeekMath), Dr. GRPO, MOPD, reasoning-gym. Every data source is listed in `dataset/sources.py`.
+[Upstream project, downloads, and technical references](README.md#来源与致谢)
